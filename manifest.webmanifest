@@ -1,0 +1,6 @@
+{
+  "name": "AI庁舎点検 Ver.2.2",
+  "short_name": "AI庁舎点検",
+  "start_url": "./",
+  "display": "standalone"
+}
