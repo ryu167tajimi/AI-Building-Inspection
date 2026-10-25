@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.3.0</title>
+<title>AI庁舎点検 Ver.3.1</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -10,7 +10,7 @@ header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13
 .screen{display:none}.screen.active{display:block}.card,.area{background:#fff;border-radius:15px;padding:15px;box-shadow:0 3px 12px #0001}
 h1{font-size:27px;margin:5px 0 12px} h2{margin:4px 0 12px}.muted{color:#64748b}.notice{background:#eff6ff;border-radius:12px;padding:12px;margin:12px 0}
 button{width:100%;border:0;border-radius:13px;padding:14px;font-size:16px;font-weight:800;cursor:pointer}
-.primary{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.secondary{background:#e2e8f0;margin-top:8px}.danger{background:#fee2e2;color:#991b1b;margin-top:8px}
+.primary{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.shot{background:#dc2626;color:#fff;font-size:21px;padding:18px;margin-top:10px;box-shadow:0 4px 12px #0003}.secondary{background:#e2e8f0;margin-top:8px}.danger{background:#fee2e2;color:#991b1b;margin-top:8px}
 .grid{display:grid;gap:10px}.area{text-align:left}.area small{color:#64748b}.positions{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
 .pos{position:relative;background:#fff;padding:0;overflow:hidden;min-height:135px}.pos img{width:100%;height:105px;object-fit:cover;display:block}
 .empty{height:105px;display:grid;place-items:center;background:#e2e8f0;color:#64748b;font-size:13px}.label{padding:8px;text-align:left}.saved{color:#15803d;font-size:12px}
@@ -20,7 +20,7 @@ button{width:100%;border:0;border-radius:13px;padding:14px;font-size:16px;font-w
 #review{display:none}.reviewImg{width:100%;max-height:60vh;object-fit:contain;background:#111827;border-radius:15px}
 @media(min-width:650px){.positions{grid-template-columns:repeat(4,1fr)}}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.3.0</span></header><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.3.1</span></header><main>
 
 <section id="start" class="screen active">
 <div class="card"><h1>笠原消防署<br>AI庁舎点検</h1>
@@ -47,7 +47,7 @@ button{width:100%;border:0;border-radius:13px;padding:14px;font-size:16px;font-w
 <div id="status" class="status">① カメラを起動してください。</div>
 <div id="opacityWrap"><label>前回写真の透明度</label><input id="opacity" type="range" min="10" max="80" value="42"></div>
 <button id="camBtn" class="primary">📷 カメラを起動</button>
-<button id="shotBtn" class="green" style="margin-top:8px">📸 この構図で撮影</button>
+<button id="shotBtn" class="shot" style="display:none">📸 撮影する</button>
 <button id="switchBtn" class="secondary">🔄 カメラ切替</button>
 <div id="review"><h2>今回の撮影写真</h2><img id="reviewImg" class="reviewImg">
 <button id="saveBtn" class="green">💾 この写真を保存</button>
@@ -84,19 +84,19 @@ async function openCapture(p){
  const rec=await getPhoto(key(area,pos));
  if(rec){if(previewURL)URL.revokeObjectURL(previewURL);previewURL=urlFor(rec.blob);$("overlay").src=previewURL;$("overlay").style.display="block";$("opacityWrap").style.display="block";$("guide").textContent="前回写真を半透明で表示しています。柱・梁・壁線などを合わせて撮影してください。";$("deleteBtn").style.display="block"}
  else{$("overlay").removeAttribute("src");$("overlay").style.display="none";$("opacityWrap").style.display="none";$("guide").textContent="初回撮影です。この写真が次回から前回写真になります。";$("deleteBtn").style.display="none"}
- $("status").textContent="① カメラを起動してください。";show("capture")
+ $("status").textContent="① カメラを起動してください。";$("camBtn").style.display="block";$("shotBtn").style.display="none";show("capture")
 }
 async function camera(){
  stop();$("status").textContent="カメラを起動しています…";
  if(!isSecureContext){$("status").textContent="⚠ HTTPS環境で開いてください。";return}
  let last;for(const c of [{audio:false,video:{facingMode:{ideal:facing}}},{audio:false,video:true}]){
-  try{stream=await navigator.mediaDevices.getUserMedia(c);$("video").srcObject=stream;await $("video").play();$("status").textContent="② 構図を合わせて撮影してください。";return}catch(e){last=e}}
+  try{stream=await navigator.mediaDevices.getUserMedia(c);$("video").srcObject=stream;await $("video").play();$("status").textContent="② 構図を合わせて「撮影する」を押してください。";$("camBtn").style.display="none";$("shotBtn").style.display="block";return}catch(e){last=e}}
  $("status").textContent=last?.name==="NotAllowedError"?"⚠ カメラ権限を許可してください。":"⚠ カメラ起動失敗："+(last?.name||"不明")
 }
 function shoot(){
  const v=$("video"),c=$("canvas");if(!stream||v.readyState<2||!v.videoWidth){$("status").textContent="⚠ カメラ映像の準備ができていません。";return}
  c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0,c.width,c.height);
- c.toBlob(blob=>{capturedBlob=blob;$("reviewImg").src=urlFor(blob);$("review").style.display="block";$("status").textContent="✓ 撮影しました。保存すると次回の前回写真になります。";stop()},"image/jpeg",.9)
+ c.toBlob(blob=>{capturedBlob=blob;$("reviewImg").src=urlFor(blob);$("review").style.display="block";$("status").textContent="✓ 撮影しました。写真を確認して保存してください。";$("shotBtn").style.display="none";stop()},"image/jpeg",.9)
 }
 async function save(){
  if(!capturedBlob)return;try{await putPhoto(key(area,pos),capturedBlob);$("status").textContent="✓ 保存しました。次回、この写真が前回写真として表示されます。";$("deleteBtn").style.display="block";$("review").style.display="none"}catch(e){$("status").textContent="⚠ 保存できませんでした："+e.name}
@@ -106,7 +106,7 @@ $("startBtn").onclick=()=>show("areas");$("backStart").onclick=()=>show("start")
 document.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{area=b.dataset.area;renderPositions()});
 $("backAreas").onclick=()=>show("areas");$("backPositions").onclick=()=>{stop();renderPositions()};
 $("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("switchBtn").onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};
-$("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";camera()};
+$("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";$("camBtn").style.display="none";$("shotBtn").style.display="none";camera()};
 $("saveBtn").onclick=save;$("deleteBtn").onclick=remove;window.addEventListener("pagehide",stop);
 openDB().catch(()=>{$("start").innerHTML='<div class="card"><h2>保存機能を開始できませんでした</h2><p>通常ブラウザで開き直してください。</p></div>'});
 })();
