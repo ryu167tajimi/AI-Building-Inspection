@@ -1,116 +1,25 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AI庁舎点検 Ver.2.2</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
-header{background:#0f172a;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
-.ver{background:#334155;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
-main{max-width:760px;margin:auto;padding:18px}.screen{display:none}.screen.active{display:block}
-.card{background:#fff;border-radius:18px;padding:22px;box-shadow:0 5px 18px rgba(15,23,42,.09)}
-h1{font-size:28px;margin:0 0 8px}h2{font-size:23px;margin:0 0 6px}.sub{color:#64748b;line-height:1.55}
-button,label.native{display:block;width:100%;border:0;border-radius:14px;padding:15px 16px;font-size:16px;font-weight:800;cursor:pointer}
-.primary{background:#2563eb;color:#fff}.secondary{background:#e2e8f0;color:#0f172a;margin-top:10px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}.area,.room,.point{background:#fff;text-align:left;box-shadow:0 3px 14px rgba(15,23,42,.09)}
-.area{min-height:90px}.area b{font-size:20px}.area small,.room small,.point small{display:block;color:#64748b;margin-top:5px}
-.list{display:grid;gap:10px;margin-top:16px}.notice{padding:14px;border-radius:12px;background:#fff7ed;color:#9a3412;font-weight:700;margin-top:14px}
-video{width:100%;min-height:240px;background:#111827;border-radius:16px;object-fit:cover}.status{padding:10px 12px;margin:10px 0;background:#eff6ff;color:#1e3a8a;border-radius:10px;font-weight:700;font-size:13px}
-.native{background:#e2e8f0;text-align:center;margin-top:10px}.native input{display:none}
-@media(max-width:520px){.grid{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.2.2</span></header>
-<main>
-<section id="start" class="screen active"><div class="card">
-<h1>笠原消防署<br>AI庁舎点検</h1>
-<p class="sub">点検エリアから場所を選択して撮影します。</p>
-<button id="startBtn" class="primary" type="button">📷 点検を開始する</button>
-</div></section>
-
-<section id="areas" class="screen">
-<h2>点検エリアを選択</h2><p class="sub">点検する階・場所を選択してください。</p>
-<div class="grid">
-<button class="area" data-area="1F"><b>🏢 1階</b><small>車庫など</small></button>
-<button class="area" data-area="2F"><b>🏢 2階</b><small>点検場所を追加予定</small></button>
-<button class="area" data-area="3F"><b>🏢 3階</b><small>点検場所を追加予定</small></button>
-<button class="area" data-area="RF"><b>☀️ 屋上</b><small>屋上設備・防水など</small></button>
-<button class="area" data-area="P"><b>🚗 駐車場</b><small>点検場所を追加予定</small></button>
-<button class="area" data-area="EXT"><b>🧱 外壁</b><small>点検場所を追加予定</small></button>
-</div>
-<button class="secondary" id="backStart">← スタートへ戻る</button>
-</section>
-
-<section id="rooms" class="screen">
-<h2 id="roomTitle">場所を選択</h2><p class="sub">点検する場所を選択してください。</p>
-<div id="roomList" class="list"></div>
-<button class="secondary" id="backAreas">← エリア選択へ戻る</button>
-</section>
-
-<section id="points" class="screen">
-<h2 id="pointTitle">点検設備</h2><p class="sub">点検する設備・箇所を選択してください。</p>
-<div id="pointList" class="list"></div>
-<button class="secondary" id="backRooms">← 戻る</button>
-</section>
-
-<section id="camera" class="screen">
-<h2 id="cameraTitle">撮影</h2><p class="sub">スマホでは「カメラを起動」をタップしてください。</p>
-<video id="video" playsinline muted autoplay></video>
-<div id="status" class="status">カメラはまだ起動していません。</div>
-<button id="cameraBtn" class="primary">📷 カメラを起動</button>
-<label class="native">📱 スマホ標準カメラで撮影<input type="file" accept="image/*" capture="environment" id="nativeCamera"></label>
-<button class="secondary" id="backPoints">← 点検設備へ戻る</button>
-</section>
-</main>
-
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AI庁舎点検 Ver.2.5</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,sans-serif}header{background:#0f172a;color:#fff;padding:14px;display:flex;justify-content:space-between}.ver{background:#334155;padding:6px 10px;border-radius:20px}main{max-width:760px;margin:auto;padding:16px}.screen{display:none}.active{display:block}.card,.area,.point{background:#fff;border-radius:16px;padding:18px;box-shadow:0 3px 12px #0001}button,label{width:100%;border:0;border-radius:14px;padding:15px;font-size:16px;font-weight:800}.primary{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.secondary{background:#e2e8f0;margin-top:9px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.list{display:grid;gap:10px}.area,.point{text-align:left}.area small,.point small{display:block;color:#64748b}.cam{position:relative;width:100%;aspect-ratio:3/4;background:#111827;border-radius:18px;overflow:hidden;margin:10px 0}.cam video,.cam img{position:absolute;width:100%;height:100%;object-fit:cover}.cam img{z-index:2;opacity:.42;display:none;pointer-events:none}.status{background:#eff6ff;color:#1e3a8a;padding:11px;border-radius:10px;margin:10px 0;font-weight:700}.file{display:block;background:#e2e8f0;text-align:center;margin-top:9px}.file input{display:none}#review{display:none}#reviewImg{width:100%;max-height:65vh;object-fit:contain;border-radius:16px;background:#111827}.notice{padding:14px;background:#fff7ed;color:#9a3412;border-radius:12px}@media(max-width:520px){.grid{grid-template-columns:1fr}}</style></head><body>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.2.5</span></header><main>
+<section id="start" class="screen active"><div class="card"><h1>笠原消防署<br>AI庁舎点検</h1><p>前回写真を重ねて同じ構図で撮影します。</p><button class="primary" onclick="show('areas')">📷 点検を開始する</button></div></section>
+<section id="areas" class="screen"><h2>点検エリア</h2><div class="grid">
+<button class="area" onclick="area('1F')"><b>🏢 1階</b></button><button class="area" onclick="area('2F')"><b>🏢 2階</b></button><button class="area" onclick="area('3F')"><b>🏢 3階</b></button><button class="area" onclick="area('RF')"><b>☀️ 屋上</b><small>RF-01</small></button><button class="area" onclick="area('GARAGE')"><b>🚒 車庫</b><small>K-05〜K-08</small></button><button class="area" onclick="area('EXT')"><b>🧱 外壁</b></button></div></section>
+<section id="points" class="screen"><h2 id="pt"></h2><div id="pl" class="list"></div><button class="secondary" onclick="show('areas')">← 戻る</button></section>
+<section id="capture" class="screen"><h2 id="ct">撮影</h2><p>前回写真の柱・梁・天井線などが重なるように合わせます。</p>
+<div id="live"><div class="cam"><video id="video" playsinline webkit-playsinline autoplay muted></video><img id="overlay"></div>
+<div id="status" class="status">① カメラを起動してください。</div>
+<button id="camBtn" class="primary">📷 カメラを起動</button>
+<label class="file">🖼 前回写真を設定<input id="prev" type="file" accept="image/*"></label>
+<p>前回写真の透明度 <input id="opacity" type="range" min="10" max="80" value="42" style="width:100%"></p>
+<button id="shot" class="green">📸 この構図で撮影</button><button id="switch" class="secondary">🔄 カメラ切替</button></div>
+<div id="review"><h2>撮影写真を確認</h2><img id="reviewImg"><button id="use" class="green">✓ この写真を使用</button><button id="retry" class="secondary">↻ 撮り直す</button><div id="saved" class="status" style="display:none">✓ 今回の点検写真として確定しました。</div></div>
+<canvas id="canvas" hidden></canvas><button class="secondary" onclick="stop();show('points')">← 点検設備へ戻る</button></section></main>
 <script>
-(function(){
-"use strict";
-var ids=["start","areas","rooms","points","camera"], stream=null, currentArea="", currentRoom="";
-var names={"1F":"1階","2F":"2階","3F":"3階","RF":"屋上","P":"駐車場","EXT":"外壁"};
-var structure={
- "1F":{"車庫":[["K-05","車庫 点検箇所 K-05"],["K-06","車庫 点検箇所 K-06"],["K-07","車庫天井⑦"],["K-08","車庫 点検箇所 K-08"]]},
- "2F":{},
- "3F":{},
- "RF":{"屋上":[["RF-01","屋上 点検箇所 RF-01"]]},
- "P":{},
- "EXT":{}
-};
-function show(id){ids.forEach(function(x){document.getElementById(x).className="screen"+(x===id?" active":"")});window.scrollTo(0,0)}
-function renderRooms(area){
- currentArea=area; var list=document.getElementById("roomList");list.innerHTML="";
- document.getElementById("roomTitle").textContent=names[area]+"｜場所を選択";
- var rooms=Object.keys(structure[area]||{});
- if(!rooms.length){var d=document.createElement("div");d.className="notice";d.textContent="このエリアの点検場所は、まだ登録されていません。";list.appendChild(d)}
- rooms.forEach(function(room){var b=document.createElement("button");b.className="room";b.innerHTML="<b>🚒 "+room+"</b><small>点検設備を表示</small>";b.onclick=function(){renderPoints(room)};list.appendChild(b)});
- show("rooms");
-}
-function renderPoints(room){
- currentRoom=room;var list=document.getElementById("pointList");list.innerHTML="";
- document.getElementById("pointTitle").textContent=names[currentArea]+" ＞ "+room+"｜点検設備";
- (structure[currentArea][room]||[]).forEach(function(p){var b=document.createElement("button");b.className="point";b.innerHTML="<b>"+p[0]+"｜"+p[1]+"</b><small>撮影へ進む</small>";b.onclick=function(){document.getElementById("cameraTitle").textContent=names[currentArea]+" ＞ "+room+" ＞ "+p[0];show("camera")};list.appendChild(b)});
- show("points");
-}
-function stop(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}document.getElementById("video").srcObject=null}
-async function camera(){
- var s=document.getElementById("status"),v=document.getElementById("video");stop();s.textContent="カメラを起動しています…";
- if(!window.isSecureContext){s.textContent="⚠ HTTPSのGitHub Pages版から開いてください。";return}
- if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){s.textContent="⚠ Webカメラ非対応です。スマホ標準カメラを使用してください。";return}
- var tries=[{audio:false,video:{facingMode:{exact:"environment"}}},{audio:false,video:{facingMode:{ideal:"environment"}}},{audio:false,video:true}],e=null;
- for(var i=0;i<tries.length;i++){try{stream=await navigator.mediaDevices.getUserMedia(tries[i]);v.srcObject=stream;v.setAttribute("playsinline","");await v.play().catch(function(){});s.textContent="✓ カメラを起動しました。";return}catch(x){e=x}}
- s.textContent=e&&e.name==="NotAllowedError"?"⚠ カメラが許可されていません。サイト設定で許可してください。":"⚠ Webカメラを起動できません。スマホ標準カメラを使用してください。";
-}
-document.getElementById("startBtn").onclick=function(){show("areas")};
-document.getElementById("backStart").onclick=function(){show("start")};
-document.getElementById("backAreas").onclick=function(){show("areas")};
-document.getElementById("backRooms").onclick=function(){show("rooms")};
-document.getElementById("backPoints").onclick=function(){stop();show("points")};
-document.getElementById("cameraBtn").onclick=camera;
-document.querySelectorAll("[data-area]").forEach(function(b){b.onclick=function(){renderRooms(b.getAttribute("data-area"))}});
-document.getElementById("nativeCamera").onchange=function(e){if(e.target.files&&e.target.files[0])document.getElementById("status").textContent="✓ スマホ標準カメラから写真を取得しました。"};
-window.addEventListener("pagehide",stop);
-})();
-</script>
-</body></html>
+const ss=["start","areas","points","capture"],names={1F:"1階",2F:"2階",3F:"3階",RF:"屋上",GARAGE:"車庫",EXT:"外壁"},data={1F:[],2F:[],3F:[],RF:[["RF-01","屋上 点検箇所 RF-01"]],GARAGE:[["K-05","車庫 点検箇所 K-05"],["K-06","車庫 点検箇所 K-06"],["K-07","車庫天井⑦"],["K-08","車庫 点検箇所 K-08"]],EXT:[]};let stream=null,facing="environment",blob=null;
+function show(x){ss.forEach(i=>document.getElementById(i).className="screen"+(i==x?" active":""));scrollTo(0,0)}
+function area(a){pt.textContent=names[a]+"｜点検設備";pl.innerHTML="";if(!data[a].length)pl.innerHTML='<div class="notice">まだ点検場所が登録されていません。</div>';data[a].forEach(p=>{let b=document.createElement("button");b.className="point";b.innerHTML="<b>"+p[0]+"｜"+p[1]+"</b><small>撮影へ進む</small>";b.onclick=()=>{ct.textContent=names[a]+" ＞ "+p[0];review.style.display="none";live.style.display="block";show("capture")};pl.appendChild(b)});show("points")}
+function stop(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+async function camera(){stop();status.textContent="カメラを起動しています…";if(!isSecureContext){status.textContent="⚠ HTTPSで開いてください。";return}let last;for(let c of [{audio:false,video:{facingMode:{ideal:facing}}},{audio:false,video:true}]){try{stream=await navigator.mediaDevices.getUserMedia(c);video.srcObject=stream;await video.play();status.textContent="② 前回写真と構図を合わせて撮影してください。";return}catch(e){last=e}}status.textContent=last?.name==="NotAllowedError"?"⚠ カメラ権限を許可してください。":"⚠ 起動失敗："+(last?.name||"不明")}
+function shoot(){if(!stream||video.readyState<2||!video.videoWidth){status.textContent="⚠ カメラ映像がまだ準備できていません。";return}canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);canvas.toBlob(b=>{if(!b){status.textContent="⚠ 撮影できませんでした。";return}blob=b;reviewImg.src=URL.createObjectURL(b);live.style.display="none";review.style.display="block";saved.style.display="none";use.disabled=false;use.textContent="✓ この写真を使用";stop();scrollTo(0,0)},"image/jpeg",.92)}
+camBtn.onclick=camera;shot.onclick=shoot;switch.onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};prev.onchange=e=>{let f=e.target.files[0];if(f){overlay.src=URL.createObjectURL(f);overlay.style.display="block"}};opacity.oninput=e=>overlay.style.opacity=e.target.value/100;retry.onclick=()=>{review.style.display="none";live.style.display="block";blob=null;camera()};use.onclick=()=>{if(blob){saved.style.display="block";use.disabled=true;use.textContent="✓ 写真確定済み"}};window.addEventListener("pagehide",stop);
+</script></body></html>
