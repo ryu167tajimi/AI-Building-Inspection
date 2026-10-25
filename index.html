@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.3.8</title>
+<title>AI庁舎点検 Ver.4.1</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -38,8 +38,22 @@ input,select{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:11px
 .planPoint{position:absolute;width:34px;height:34px;border-radius:50%;border:2px solid #334155;background:#fff;color:#0f172a;font-weight:900;padding:0;margin:0;transform:translate(-50%,-50%);z-index:5;box-shadow:0 1px 4px #0002}
 .planPoint.hasPhoto{background:#16a34a;color:#fff;border-color:#166534}
 .planPoint:active{transform:translate(-50%,-50%) scale(.94)}
+
+html,body{touch-action:manipulation}
+.cam,#video,#overlay{touch-action:none}
+.shutterBar{position:sticky;bottom:8px;z-index:50;background:rgba(255,255,255,.97);padding:9px;border-radius:15px;box-shadow:0 -2px 14px #0002;margin:8px 0}
+.shutterBar .shot{margin:0;min-height:64px;font-size:21px}
+.inspectionSaveBox{margin-top:16px;padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px}
+.saveStatus{font-size:13px;color:#475569;margin-top:7px}
+
+.savedRec{border-top:1px solid #cbd5e1;padding:10px 0;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.savedRecInfo{min-width:0;font-size:14px}.savedRecInfo b{font-size:16px}
+.deleteRec{width:auto!important;margin:0!important;padding:9px 12px!important;background:#dc2626!important;color:#fff!important;border:none!important;border-radius:10px!important;white-space:nowrap}
+
+button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cursor:pointer}
+#saveInspectionBtn,#manageInspectionBtn{position:relative;z-index:20;pointer-events:auto}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.3.8</span></header><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.1</span></header><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -71,7 +85,13 @@ input,select{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:11px
 <button class="area" data-area="2F">🏢 <b>2階</b><br><small>撮影位置 01〜11</small></button>
 <button class="area" data-area="3F">🏢 <b>3階</b><br><small>撮影位置 01〜11</small></button>
 <button class="area" data-area="RF">☀️ <b>屋上</b><br><small>撮影位置 01〜05</small></button>
-</div><button class="secondary" id="backStart">← 戻る</button></section>
+</div>
+<div class="inspectionSaveBox"><b>💾 本日の点検記録</b><div class="muted" style="margin-top:5px">撮影した内容を、この日の点検として保存します。</div>
+<button type="button" id="saveInspectionBtn" class="green">💾 その日の点検を保存</button><div id="inspectionSaveStatus" class="saveStatus">未保存</div>
+<button type="button" id="manageInspectionBtn" class="secondary">📚 保存済み点検記録を確認・削除</button>
+<div id="savedInspectionList" style="display:none;margin-top:10px"></div>
+</div>
+<button type="button" class="secondary" id="backStart">← 戻る</button></section>
 
 <section id="positions" class="screen">
 <h2 id="areaTitle"></h2><p class="muted">番号をタップして撮影場所を選択してください。</p>
@@ -91,7 +111,7 @@ input,select{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:11px
 <div id="status" class="status">① カメラを起動してください。</div>
 <div id="opacityWrap"><label>前回写真の透明度</label><input id="opacity" type="range" min="10" max="80" value="42"></div>
 <button id="camBtn" class="primary">📷 カメラを起動</button>
-<button id="shotBtn" class="shot" style="display:none">📸 撮影する</button>
+<div class="shutterBar"><button type="button" id="shotBtn" class="shot" style="display:none">📸 撮影する</button></div>
 <button id="switchBtn" class="secondary">🔄 カメラ切替</button>
 <div id="review"><h2>今回の撮影写真</h2><img id="reviewImg" class="reviewImg">
 <button id="saveBtn" class="green">💾 この写真を保存</button>
@@ -110,7 +130,7 @@ let db=null,stream=null,facing="environment",area="",pos=0,capturedBlob=null,pre
 
 function show(id){screens.forEach(x=>$(x).className="screen"+(x===id?" active":""));scrollTo(0,0)}
 function key(a,p){return a+"-"+String(p).padStart(2,"0")}
-function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("KasaharaFacilityInspectionHistory",1);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains("history"))d.createObjectStore("history",{keyPath:"id",autoIncrement:true}).createIndex("location","location",{unique:false})};r.onsuccess=e=>{db=e.target.result;resolve(db)};r.onerror=()=>reject(r.error)})}
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("KasaharaFacilityInspectionHistory",2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains("history"))d.createObjectStore("history",{keyPath:"id",autoIncrement:true}).createIndex("location","location",{unique:false});if(!d.objectStoreNames.contains("inspections"))d.createObjectStore("inspections",{keyPath:"id"})};r.onsuccess=e=>{db=e.target.result;resolve(db)};r.onerror=()=>reject(r.error)})}
 function allHistory(k){return new Promise((resolve,reject)=>{const r=db.transaction("history","readonly").objectStore("history").index("location").getAll(k);r.onsuccess=()=>resolve((r.result||[]).sort((a,b)=>new Date(a.capturedAt)-new Date(b.capturedAt)));r.onerror=()=>reject(r.error)})}
 function getPhoto(k){return allHistory(k).then(h=>h.length?h[h.length-1]:null)}
 function putPhoto(k,blob){return new Promise((resolve,reject)=>{const r=db.transaction("history","readwrite").objectStore("history").add({location:k,blob,inspectionDate:window.currentInspectionDate,inspector:window.currentInspector,capturedAt:new Date().toISOString()});r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
@@ -212,16 +232,47 @@ $("addInspectorBtn").onclick=addInspector;$("inspectionDate").onchange=updatePre
 $("startBtn").onclick=()=>{
  const d=$("inspectionDate").value,n1=$("inspectorSelect1").value,n2=$("inspectorSelect2").value;
  if(!d){alert("点検日を入力してください。");return}if(!n1){alert("点検者①を選択してください。");return}
- window.currentInspectionDate=d;window.currentInspector=n2?n1+"・"+n2:n1;
+ window.currentInspectionDate=d;window.currentInspector=n2?n1+"・"+n2:n1;$("inspectionSaveStatus").textContent="未保存";
  localStorage.setItem("kasaharaInspector1",n1);localStorage.setItem("kasaharaInspector2",n2);show("areas")
 };
 $("mapViewBtn").onclick=()=>{$("mapView").style.display="block";$("listView").style.display="none";$("mapViewBtn").className="primary";$("listViewBtn").className="secondary";$("listViewBtn").style.marginTop="0"};
 $("listViewBtn").onclick=()=>{$("mapView").style.display="none";$("listView").style.display="block";$("listViewBtn").className="primary";$("mapViewBtn").className="secondary";$("mapViewBtn").style.marginTop="0"};
+
+async function buildInspectionSummary(){const ks=["GARAGE","2F","3F","RF"],photos=[];for(const a of ks){for(let p=1;p<=planDefs[a].count;p++){const h=await allHistory(key(a,p));h.filter(x=>x.inspectionDate===window.currentInspectionDate).forEach(x=>photos.push({area:a,position:p,capturedAt:x.capturedAt||"",inspector:x.inspector||window.currentInspector||""}))}}return photos}
+
+async function getSavedInspections(){
+ if(!db)await openDB();
+ return await new Promise((ok,no)=>{const tx=db.transaction("inspections","readonly"),r=tx.objectStore("inspections").getAll();r.onsuccess=()=>ok((r.result||[]).sort((a,b)=>String(b.date).localeCompare(String(a.date))));r.onerror=()=>no(r.error)})
+}
+async function renderSavedInspections(){
+ const box=$("savedInspectionList"),rows=await getSavedInspections();box.innerHTML="";
+ if(!rows.length){box.innerHTML='<div class="muted">保存済みの点検記録はありません。</div>';return}
+ rows.forEach(r=>{
+  const row=document.createElement("div");row.className="savedRec";
+  const info=document.createElement("div");info.className="savedRecInfo";
+  info.innerHTML='<b>'+r.date+'</b><br>'+(r.inspectors||"点検者未記録")+'　写真 '+(r.photoCount||0)+'枚';
+  const del=document.createElement("button");del.type="button";del.className="deleteRec";del.textContent="削除";
+  del.onclick=async()=>{if(!confirm(r.date+" の点検記録を削除しますか？\\n※写真履歴は削除しません。"))return;await deleteInspectionRecord(r.id);await renderSavedInspections();if(window.currentInspectionDate===r.date)$("inspectionSaveStatus").textContent="未保存";alert("点検記録を削除しました。")};
+  row.append(info,del);box.appendChild(row)
+ })
+}
+async function deleteInspectionRecord(id){
+ if(!db)await openDB();
+ return await new Promise((ok,no)=>{const tx=db.transaction("inspections","readwrite");tx.objectStore("inspections").delete(id);tx.oncomplete=()=>ok();tx.onerror=()=>no(tx.error)})
+}
+async function saveInspectionRecord(){if(!db)await openDB();if(!window.currentInspectionDate){alert("点検を開始してから保存してください。");return}const photos=await buildInspectionSummary(),n1=$("inspectorSelect1").value||"",n2=$("inspectorSelect2").value||"",rec={id:window.currentInspectionDate,date:window.currentInspectionDate,inspector1:n1,inspector2:n2,inspectors:n2?n1+"・"+n2:n1,savedAt:new Date().toISOString(),photoCount:photos.length,photos};try{await new Promise((ok,no)=>{const tx=db.transaction("inspections","readwrite");tx.objectStore("inspections").put(rec);tx.oncomplete=()=>ok();tx.onerror=()=>no(tx.error)});$("inspectionSaveStatus").textContent="保存済み："+rec.date+"　写真 "+rec.photoCount+"枚";alert("本日の点検を保存しました。\\n写真："+rec.photoCount+"枚")}catch(e){alert("点検記録を保存できませんでした。")}}
 document.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{area=b.dataset.area;renderPositions()});
 $("backAreas").onclick=()=>show("areas");$("backPositions").onclick=()=>{stop();renderPositions()};
 $("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("switchBtn").onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};
 $("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";$("camBtn").style.display="none";$("shotBtn").style.display="none";camera()};
 $("saveBtn").onclick=save;$("historyBtn").onclick=renderHistory;$("backCapture").onclick=()=>show("capture");window.addEventListener("pagehide",stop);
-const td=new Date();$("inspectionDate").value=[td.getFullYear(),String(td.getMonth()+1).padStart(2,"0"),String(td.getDate()).padStart(2,"0")].join("-");loadInspectors();openDB().then(updatePreviousInspection).catch(()=>{$("setup").innerHTML='<div class="card"><h2>保存機能を開始できませんでした</h2><p>通常ブラウザで開き直してください。</p></div>'});
+const td=new Date();$("inspectionDate").value=[td.getFullYear(),String(td.getMonth()+1).padStart(2,"0"),String(td.getDate()).padStart(2,"0")].join("-");loadInspectors();
+document.addEventListener("click",async function(e){
+ const save=e.target.closest("#saveInspectionBtn");
+ if(save){e.preventDefault();e.stopPropagation();await saveInspectionRecord();const box=$("savedInspectionList");if(box&&box.style.display!=="none")await renderSavedInspections();return}
+ const manage=e.target.closest("#manageInspectionBtn");
+ if(manage){e.preventDefault();e.stopPropagation();const box=$("savedInspectionList");if(!box)return;const open=box.style.display==="none"||getComputedStyle(box).display==="none";box.style.display=open?"block":"none";manage.textContent=open?"▲ 保存済み点検記録を閉じる":"📚 保存済み点検記録を確認・削除";if(open)await renderSavedInspections();return}
+});
+openDB().then(updatePreviousInspection).catch(()=>{$("setup").innerHTML='<div class="card"><h2>保存機能を開始できませんでした</h2><p>通常ブラウザで開き直してください。</p></div>'});
 })();
 </script></body></html>
