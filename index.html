@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.1</title>
+<title>AI庁舎点検 Ver.4.3</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -52,8 +52,13 @@ html,body{touch-action:manipulation}
 
 button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cursor:pointer}
 #saveInspectionBtn,#manageInspectionBtn{position:relative;z-index:20;pointer-events:auto}
+
+.zoomControls{display:flex;align-items:center;justify-content:center;gap:18px;margin:0 0 10px}
+.zoomBtn{width:58px!important;height:48px!important;margin:0!important;padding:0!important;border-radius:24px!important;font-size:28px!important;font-weight:900!important;background:#e2e8f0!important;color:#0f172a!important;border:1px solid #94a3b8!important}
+.zoomValue{min-width:60px;text-align:center;font-size:20px}
+.cam{overflow:hidden}#video{transform-origin:center center}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.1</span></header><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.3</span></header><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -111,7 +116,14 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <div id="status" class="status">① カメラを起動してください。</div>
 <div id="opacityWrap"><label>前回写真の透明度</label><input id="opacity" type="range" min="10" max="80" value="42"></div>
 <button id="camBtn" class="primary">📷 カメラを起動</button>
-<div class="shutterBar"><button type="button" id="shotBtn" class="shot" style="display:none">📸 撮影する</button></div>
+<div class="shutterBar">
+<div id="zoomControls" class="zoomControls" style="display:none">
+<button type="button" id="zoomOutBtn" class="zoomBtn">−</button>
+<b id="zoomValue" class="zoomValue">1.0×</b>
+<button type="button" id="zoomInBtn" class="zoomBtn">＋</button>
+</div>
+<button type="button" id="shotBtn" class="shot" style="display:none">📸 撮影する</button>
+</div>
 <button id="switchBtn" class="secondary">🔄 カメラ切替</button>
 <div id="review"><h2>今回の撮影写真</h2><img id="reviewImg" class="reviewImg">
 <button id="saveBtn" class="green">💾 この写真を保存</button>
@@ -134,7 +146,7 @@ function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("
 function allHistory(k){return new Promise((resolve,reject)=>{const r=db.transaction("history","readonly").objectStore("history").index("location").getAll(k);r.onsuccess=()=>resolve((r.result||[]).sort((a,b)=>new Date(a.capturedAt)-new Date(b.capturedAt)));r.onerror=()=>reject(r.error)})}
 function getPhoto(k){return allHistory(k).then(h=>h.length?h[h.length-1]:null)}
 function putPhoto(k,blob){return new Promise((resolve,reject)=>{const r=db.transaction("history","readwrite").objectStore("history").add({location:k,blob,inspectionDate:window.currentInspectionDate,inspector:window.currentInspector,capturedAt:new Date().toISOString()});r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
-function stop(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("video").srcObject=null}
+function stop(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("video").srcObject=null;$("video").style.transform="scale(1)";if($("zoomControls"))$("zoomControls").style.display="none"}
 function urlFor(blob){return URL.createObjectURL(blob)}
 
 const planDefs={
@@ -180,16 +192,26 @@ async function openCapture(p){
  else{$("overlay").removeAttribute("src");$("overlay").style.display="none";$("opacityWrap").style.display="none";$("guide").textContent="初回撮影です。この写真が次回から前回写真になります。"}
  $("status").textContent="① カメラを起動してください。";$("camBtn").style.display="block";$("shotBtn").style.display="none";show("capture")
 }
+
+let cameraZoom=1;
+function applyCameraZoom(){
+ $("video").style.transform="scale("+cameraZoom+")";
+ $("zoomValue").textContent=cameraZoom.toFixed(1)+"×";
+}
+function zoomIn(){cameraZoom=Math.min(3,cameraZoom+0.5);applyCameraZoom()}
+function zoomOut(){cameraZoom=Math.max(1,cameraZoom-0.5);applyCameraZoom()}
 async function camera(){
  stop();$("status").textContent="カメラを起動しています…";
  if(!isSecureContext){$("status").textContent="⚠ HTTPS環境で開いてください。";return}
  let last;for(const c of [{audio:false,video:{facingMode:{ideal:facing}}},{audio:false,video:true}]){
-  try{stream=await navigator.mediaDevices.getUserMedia(c);$("video").srcObject=stream;await $("video").play();$("status").textContent="② 構図を合わせて「撮影する」を押してください。";$("camBtn").style.display="none";$("shotBtn").style.display="block";return}catch(e){last=e}}
+  try{stream=await navigator.mediaDevices.getUserMedia(c);$("video").srcObject=stream;await $("video").play();cameraZoom=1;applyCameraZoom();$("zoomControls").style.display="flex";$("status").textContent="② 構図を合わせて「撮影する」を押してください。";$("camBtn").style.display="none";$("shotBtn").style.display="block";return}catch(e){last=e}}
  $("status").textContent=last?.name==="NotAllowedError"?"⚠ カメラ権限を許可してください。":"⚠ カメラ起動失敗："+(last?.name||"不明")
 }
 function shoot(){
  const v=$("video"),c=$("canvas");if(!stream||v.readyState<2||!v.videoWidth){$("status").textContent="⚠ カメラ映像の準備ができていません。";return}
- c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+ c.width=v.videoWidth;c.height=v.videoHeight;
+ const ctx=c.getContext("2d"),sw=v.videoWidth/cameraZoom,sh=v.videoHeight/cameraZoom,sx=(v.videoWidth-sw)/2,sy=(v.videoHeight-sh)/2;
+ ctx.drawImage(v,sx,sy,sw,sh,0,0,c.width,c.height);
  c.toBlob(blob=>{capturedBlob=blob;$("reviewImg").src=urlFor(blob);$("review").style.display="block";$("status").textContent="✓ 撮影しました。写真を確認して保存してください。";$("shotBtn").style.display="none";stop()},"image/jpeg",.9)
 }
 async function save(){
@@ -263,7 +285,7 @@ async function deleteInspectionRecord(id){
 async function saveInspectionRecord(){if(!db)await openDB();if(!window.currentInspectionDate){alert("点検を開始してから保存してください。");return}const photos=await buildInspectionSummary(),n1=$("inspectorSelect1").value||"",n2=$("inspectorSelect2").value||"",rec={id:window.currentInspectionDate,date:window.currentInspectionDate,inspector1:n1,inspector2:n2,inspectors:n2?n1+"・"+n2:n1,savedAt:new Date().toISOString(),photoCount:photos.length,photos};try{await new Promise((ok,no)=>{const tx=db.transaction("inspections","readwrite");tx.objectStore("inspections").put(rec);tx.oncomplete=()=>ok();tx.onerror=()=>no(tx.error)});$("inspectionSaveStatus").textContent="保存済み："+rec.date+"　写真 "+rec.photoCount+"枚";alert("本日の点検を保存しました。\\n写真："+rec.photoCount+"枚")}catch(e){alert("点検記録を保存できませんでした。")}}
 document.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{area=b.dataset.area;renderPositions()});
 $("backAreas").onclick=()=>show("areas");$("backPositions").onclick=()=>{stop();renderPositions()};
-$("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("switchBtn").onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};
+$("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("zoomOutBtn").onclick=zoomOut;$("zoomInBtn").onclick=zoomIn;$("switchBtn").onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};
 $("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";$("camBtn").style.display="none";$("shotBtn").style.display="none";camera()};
 $("saveBtn").onclick=save;$("historyBtn").onclick=renderHistory;$("backCapture").onclick=()=>show("capture");window.addEventListener("pagehide",stop);
 const td=new Date();$("inspectionDate").value=[td.getFullYear(),String(td.getMonth()+1).padStart(2,"0"),String(td.getDate()).padStart(2,"0")].join("-");loadInspectors();
