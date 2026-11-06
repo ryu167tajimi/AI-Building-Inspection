@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.3</title>
+<title>AI庁舎点検 Ver.4.4</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -57,8 +57,17 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .zoomBtn{width:58px!important;height:48px!important;margin:0!important;padding:0!important;border-radius:24px!important;font-size:28px!important;font-weight:900!important;background:#e2e8f0!important;color:#0f172a!important;border:1px solid #94a3b8!important}
 .zoomValue{min-width:60px;text-align:center;font-size:20px}
 .cam{overflow:hidden}#video{transform-origin:center center}
+
+.assessBox{margin-top:14px;padding:14px;border:1px solid #cbd5e1;border-radius:14px;background:#fff}
+.assessGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.assessGrid label{font-size:12px;font-weight:800}
+.assessGrid select,.assessGrid input{width:100%;margin-top:4px;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+.evalTable{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.evalTable th,.evalTable td{border:1px solid #dbe3ec;padding:8px;text-align:left}.evalTable th{background:#f1f5f9;width:43%}
+.lv1,.lv2{color:#15803d}.lv3{color:#a16207}.lv4{color:#c2410c}.lv5{color:#b91c1c;font-weight:900}
+.costBig{font-size:24px;font-weight:900;color:#0f172a}.warningCost{font-size:11px;color:#64748b;line-height:1.5}
+.comparePhotos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.comparePhotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#e2e8f0}
+@media(max-width:420px){.assessGrid{grid-template-columns:1fr}.comparePhotos{gap:5px}}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.3</span></header><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.4</span></header><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -126,6 +135,25 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 </div>
 <button id="switchBtn" class="secondary">🔄 カメラ切替</button>
 <div id="review"><h2>今回の撮影写真</h2><img id="reviewImg" class="reviewImg">
+<div class="assessBox">
+ <h3 style="margin:0 0 8px">🤖 撮影後評価・概算修繕費</h3>
+<p class="warningCost">この公開版単体では写真の意味を理解する生成AIは内蔵していません。前回・今回写真を並べて確認し、AI診断結果または点検者判断を5段階・状態変化・優先度として記録し、公開相場データから概算費用を計算します。</p>
+ <div id="prevCompare" class="comparePhotos" style="display:none"><div><small>前回</small><img id="prevAssessImg"></div><div><small>今回</small><img id="currentAssessImg"></div></div>
+ <div class="assessGrid">
+  <label>状態レベル<select id="conditionLevel"><option value="1">Lv.1 良好</option><option value="2">Lv.2 軽微</option><option value="3" selected>Lv.3 要観察</option><option value="4">Lv.4 要修繕</option><option value="5">Lv.5 危険・早急対応</option></select></label>
+  <label>前回からの状態<select id="changeState"><option>変化なし</option><option>変化あり（悪化）</option><option>変化あり（改善）</option><option>判定困難</option><option>初回・比較なし</option></select></label>
+  <label>修繕優先度<select id="priority"><option value="A">A：最優先</option><option value="B">B：早期</option><option value="C" selected>C：計画修繕</option><option value="D">D：経過観察</option></select></label>
+  <label>修繕種類<select id="repairType"><option value="ceiling">天井材・ボード補修</option><option value="crack">ひび割れ・クラック</option><option value="seal">シーリング・目地</option><option value="waterproof">防水補修</option><option value="paint">外壁・塗装</option><option value="other">その他</option></select></label>
+  <label>おおよその施工量<input id="repairQty" type="number" min="0" step="0.1" value="10"></label>
+  <label>単位<select id="repairUnit"><option value="sqm">㎡</option><option value="m">m</option><option value="job">一式</option></select></label>
+  <label>高所作業<select id="heightWork"><option value="none">なし</option><option value="scaffold">足場が必要</option><option value="lift">高所作業車を検討</option></select></label>
+  <label>足場面積（㎡）<input id="scaffoldArea" type="number" min="0" step="1" value="0"></label>
+  <label>アスベスト等特殊対応<select id="specialWork"><option value="none">なし・不明</option><option value="asbestos">あり（別途見積）</option></select></label>
+ </div>
+ <button type="button" id="estimateBtn" class="primary">💰 概算費用を計算</button>
+ <table class="evalTable"><tr><th>状態レベル</th><td id="evalLevel">Lv.3 要観察</td></tr><tr><th>前回から</th><td id="evalChange">－</td></tr><tr><th>優先度</th><td id="evalPriority">C：計画修繕</td></tr><tr><th>本体修繕</th><td id="baseCost">－</td></tr><tr><th>足場・高所作業</th><td id="accessCost">－</td></tr><tr><th>諸経費等</th><td id="miscCost">－</td></tr><tr><th>総額概算</th><td><span id="totalCost" class="costBig">－</span></td></tr></table>
+ <p class="warningCost">※予算検討用の概算です。正式な工事価格ではありません。現地条件、施工範囲、最低工事費、足場、養生、撤去・廃棄、設備移設、アスベスト等で大きく変動します。特殊対応は金額に自動加算せず「別途見積」とします。</p>
+</div>
 <button id="saveBtn" class="green">💾 この写真を保存</button>
 <button id="retryBtn" class="secondary">↻ 撮り直す</button></div>
 <button id="historyBtn" class="secondary">🕘 この位置の写真履歴を見る</button>
@@ -187,12 +215,38 @@ async function renderPositions(){
 }
 async function openCapture(p){
  pos=p;capturedBlob=null;$("review").style.display="none";$("capTitle").textContent=names[area]+"｜撮影位置 "+String(pos).padStart(2,"0");
- const rec=await getPhoto(key(area,pos));
+ const rec=await getPhoto(key(area,pos));window.previousInspectionRecord=rec;
  if(rec){if(previewURL)URL.revokeObjectURL(previewURL);previewURL=urlFor(rec.blob);$("overlay").src=previewURL;$("overlay").style.display="block";$("opacityWrap").style.display="block";$("guide").textContent="前回："+(rec.inspectionDate||"記録なし")+"／点検者："+(rec.inspector||"記録なし")+"。半透明写真に構図を合わせて撮影してください。"}
  else{$("overlay").removeAttribute("src");$("overlay").style.display="none";$("opacityWrap").style.display="none";$("guide").textContent="初回撮影です。この写真が次回から前回写真になります。"}
  $("status").textContent="① カメラを起動してください。";$("camBtn").style.display="block";$("shotBtn").style.display="none";show("capture")
 }
 
+
+const COST_PUBLIC_DATA={
+ ceiling:{name:"天井材・ボード補修",unit:"sqm",low:3000,high:7000,minLow:30000,minHigh:80000,source:"民間相場を参考にしたアプリ初期値"},
+ crack:{name:"ひび割れ・クラック",unit:"sqm",low:1700,high:2500,minLow:30000,minHigh:80000,source:"ホームプロ等の公開相場"},
+ seal:{name:"シーリング・目地",unit:"m",low:700,high:1500,minLow:30000,minHigh:80000,source:"ホームプロ・リフォームガイド等の公開相場"},
+ waterproof:{name:"防水補修",unit:"job",low:70000,high:300000,minLow:70000,minHigh:300000,source:"リフォームガイド公開相場（小規模例）"},
+ paint:{name:"外壁・塗装",unit:"sqm",low:2000,high:5000,minLow:50000,minHigh:150000,source:"公開相場を参考にしたアプリ初期値"},
+ other:{name:"その他",unit:"job",low:50000,high:200000,minLow:50000,minHigh:200000,source:"参考初期値"}
+};
+function yen(n){return Math.round(n/1000)*1000}
+function rangeText(lo,hi){return yen(lo).toLocaleString("ja-JP")+"～"+yen(hi).toLocaleString("ja-JP")+"円"}
+function estimateRepair(){
+ const t=$("repairType").value,d=COST_PUBLIC_DATA[t],q=Math.max(0,Number($("repairQty").value)||0);
+ let lo=d.low,hi=d.high;
+ if(d.unit!=="job"){lo=Math.max(d.minLow,lo*q);hi=Math.max(d.minHigh,hi*q)}
+ let alo=0,ahi=0,access=$("heightWork").value,sa=Math.max(0,Number($("scaffoldArea").value)||0);
+ if(access==="scaffold"){alo=Math.max(50000,sa*600);ahi=Math.max(120000,sa*1200)}
+ if(access==="lift"){alo=30000;ahi=120000}
+ const subtotalLo=lo+alo,subtotalHi=hi+ahi,mlo=subtotalLo*.05,mhi=subtotalHi*.15,totalLo=subtotalLo+mlo,totalHi=subtotalHi+mhi;
+ const lv=$("conditionLevel"),ch=$("changeState"),pr=$("priority");
+ $("evalLevel").textContent=lv.options[lv.selectedIndex].text;$("evalLevel").className="lv"+lv.value;
+ $("evalChange").textContent=ch.value;$("evalPriority").textContent=pr.options[pr.selectedIndex].text;
+ $("baseCost").textContent=rangeText(lo,hi);$("accessCost").textContent=access==="none"?"なし":rangeText(alo,ahi);
+ $("miscCost").textContent=rangeText(mlo,mhi);
+ $("totalCost").textContent=rangeText(totalLo,totalHi)+($("specialWork").value==="asbestos"?" ＋ 特殊対応費（別途見積）":"");
+}
 let cameraZoom=1;
 function applyCameraZoom(){
  $("video").style.transform="scale("+cameraZoom+")";
@@ -212,7 +266,9 @@ function shoot(){
  c.width=v.videoWidth;c.height=v.videoHeight;
  const ctx=c.getContext("2d"),sw=v.videoWidth/cameraZoom,sh=v.videoHeight/cameraZoom,sx=(v.videoWidth-sw)/2,sy=(v.videoHeight-sh)/2;
  ctx.drawImage(v,sx,sy,sw,sh,0,0,c.width,c.height);
- c.toBlob(blob=>{capturedBlob=blob;$("reviewImg").src=urlFor(blob);$("review").style.display="block";$("status").textContent="✓ 撮影しました。写真を確認して保存してください。";$("shotBtn").style.display="none";stop()},"image/jpeg",.9)
+ c.toBlob(blob=>{capturedBlob=blob;const cur=urlFor(blob);$("reviewImg").src=cur;$("currentAssessImg").src=cur;
+ if(window.previousInspectionRecord){$("prevAssessImg").src=urlFor(window.previousInspectionRecord.blob);$("prevCompare").style.display="grid";$("changeState").value="判定困難"}else{$("prevCompare").style.display="none";$("changeState").value="初回・比較なし"}
+ $("review").style.display="block";$("status").textContent="✓ 撮影しました。写真を確認して保存してください。";$("shotBtn").style.display="none";stop()},"image/jpeg",.9)
 }
 async function save(){
  if(!capturedBlob)return;try{await putPhoto(key(area,pos),capturedBlob);$("status").textContent="✓ 保存しました。次回、この写真が前回写真として表示されます。";$("review").style.display="none"}catch(e){$("status").textContent="⚠ 保存できませんでした："+e.name}
@@ -285,7 +341,7 @@ async function deleteInspectionRecord(id){
 async function saveInspectionRecord(){if(!db)await openDB();if(!window.currentInspectionDate){alert("点検を開始してから保存してください。");return}const photos=await buildInspectionSummary(),n1=$("inspectorSelect1").value||"",n2=$("inspectorSelect2").value||"",rec={id:window.currentInspectionDate,date:window.currentInspectionDate,inspector1:n1,inspector2:n2,inspectors:n2?n1+"・"+n2:n1,savedAt:new Date().toISOString(),photoCount:photos.length,photos};try{await new Promise((ok,no)=>{const tx=db.transaction("inspections","readwrite");tx.objectStore("inspections").put(rec);tx.oncomplete=()=>ok();tx.onerror=()=>no(tx.error)});$("inspectionSaveStatus").textContent="保存済み："+rec.date+"　写真 "+rec.photoCount+"枚";alert("本日の点検を保存しました。\\n写真："+rec.photoCount+"枚")}catch(e){alert("点検記録を保存できませんでした。")}}
 document.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{area=b.dataset.area;renderPositions()});
 $("backAreas").onclick=()=>show("areas");$("backPositions").onclick=()=>{stop();renderPositions()};
-$("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("zoomOutBtn").onclick=zoomOut;$("zoomInBtn").onclick=zoomIn;$("switchBtn").onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};
+$("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("zoomOutBtn").onclick=zoomOut;$("zoomInBtn").onclick=zoomIn;$("estimateBtn").onclick=estimateRepair;$("switchBtn").onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};
 $("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";$("camBtn").style.display="none";$("shotBtn").style.display="none";camera()};
 $("saveBtn").onclick=save;$("historyBtn").onclick=renderHistory;$("backCapture").onclick=()=>show("capture");window.addEventListener("pagehide",stop);
 const td=new Date();$("inspectionDate").value=[td.getFullYear(),String(td.getMonth()+1).padStart(2,"0"),String(td.getDate()).padStart(2,"0")].join("-");loadInspectors();
