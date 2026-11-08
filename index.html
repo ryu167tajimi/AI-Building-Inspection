@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.5</title>
+<title>AI庁舎点検 Ver.4.7</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -66,8 +66,9 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .costBig{font-size:24px;font-weight:900;color:#0f172a}.warningCost{font-size:11px;color:#64748b;line-height:1.5}
 .comparePhotos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.comparePhotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#e2e8f0}
 @media(max-width:420px){.assessGrid{grid-template-columns:1fr}.comparePhotos{gap:5px}}
+.homeFloat{position:fixed;right:14px;top:64px;z-index:9999;width:auto;min-width:116px;margin:0;padding:11px 14px;border:0;border-radius:999px;background:#0f172a;color:#fff;font-weight:900;box-shadow:0 4px 14px #0004;display:none}.homeFloat.show{display:block}.homeFloat:active{transform:scale(.97)}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.5</span></header><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.7</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -150,8 +151,12 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
   <label>足場面積（㎡）<input id="scaffoldArea" type="number" min="0" step="1" value="0"></label>
   <label>アスベスト等特殊対応<select id="specialWork"><option value="none">なし・不明</option><option value="asbestos">あり（別途見積）</option></select></label>
  </div>
- <button type="button" id="estimateBtn" class="primary">💰 概算費用を計算</button>
- <table class="evalTable"><tr><th>状態レベル</th><td id="evalLevel">Lv.3 要観察</td></tr><tr><th>前回から</th><td id="evalChange">－</td></tr><tr><th>優先度</th><td id="evalPriority">C：計画修繕</td></tr><tr><th>本体修繕</th><td id="baseCost">－</td></tr><tr><th>足場・高所作業</th><td id="accessCost">－</td></tr><tr><th>諸経費等</th><td id="miscCost">－</td></tr><tr><th>総額概算</th><td><span id="totalCost" class="costBig">－</span></td></tr></table>
+ <div class="assessGrid">
+<label>人・車両への影響<select id="impactRisk"><option value="1">低</option><option value="2">中</option><option value="3">高</option></select></label>
+<label>落下・破損等の危険<select id="fallRisk"><option value="1">低</option><option value="2">中</option><option value="3">高</option></select></label>
+</div>
+<button type="button" id="estimateBtn" class="primary">💰 診断結果・概算費用を更新</button>
+ <table class="evalTable"><tr><th>状態レベル</th><td id="evalLevel">Lv.3 要観察</td></tr><tr><th>前回から</th><td id="evalChange">－</td></tr><tr><th>優先度</th><td id="evalPriority">C：計画修繕</td></tr><tr><th>職員修繕可否</th><td id="staffRepair">－</td></tr><tr><th>判定根拠</th><td id="diagnosisBasis">前回写真との比較・危険性・施工条件を確認</td></tr><tr><th>本体修繕</th><td id="baseCost">－</td></tr><tr><th>足場・高所作業</th><td id="accessCost">－</td></tr><tr><th>諸経費等</th><td id="miscCost">－</td></tr><tr><th>総額概算</th><td><span id="totalCost" class="costBig">－</span></td></tr></table>
  <p class="warningCost">※予算検討用の概算です。正式な工事価格ではありません。現地条件、施工範囲、最低工事費、足場、養生、撤去・廃棄、設備移設、アスベスト等で大きく変動します。特殊対応は金額に自動加算せず「別途見積」とします。</p>
 </div>
 <button id="saveBtn" class="green">💾 この写真を保存</button>
@@ -169,7 +174,8 @@ const screens=["welcome","setup","areas","positions","capture","history"];
 const $=id=>document.getElementById(id);
 let db=null,stream=null,facing="environment",area="",pos=0,capturedBlob=null,previewURL=null;
 
-function show(id){screens.forEach(x=>$(x).className="screen"+(x===id?" active":""));scrollTo(0,0)}
+function show(id){screens.forEach(x=>$(x).className="screen"+(x===id?" active":""));const hb=$("homeBtn");if(hb)hb.className="homeFloat"+(id!=="welcome"?" show":"");scrollTo(0,0)}
+function goHome(){stop();if(previewURL){try{URL.revokeObjectURL(previewURL)}catch(e){}previewURL=null}capturedBlob=null;const r=$("review");if(r)r.style.display="none";show("welcome")}
 function key(a,p){return a+"-"+String(p).padStart(2,"0")}
 function b64ToBlob(b64,mime){const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);return new Blob([u8],{type:mime||"image/jpeg"})}
 async function seedBaseline20261025(){
@@ -254,7 +260,15 @@ function estimateRepair(){
  const subtotalLo=lo+alo,subtotalHi=hi+ahi,mlo=subtotalLo*.05,mhi=subtotalHi*.15,totalLo=subtotalLo+mlo,totalHi=subtotalHi+mhi;
  const lv=$("conditionLevel"),ch=$("changeState"),pr=$("priority");
  $("evalLevel").textContent=lv.options[lv.selectedIndex].text;$("evalLevel").className="lv"+lv.value;
- $("evalChange").textContent=ch.value;$("evalPriority").textContent=pr.options[pr.selectedIndex].text;
+ $("evalChange").textContent=ch.value;
+ const impact=Number($("impactRisk").value),fall=Number($("fallRisk").value);
+ if((Number(lv.value)>=5)||fall>=3||(ch.value==="変化あり（悪化）"&&Number(lv.value)>=4)) pr.value="A";
+ else if(Number(lv.value)>=4||impact>=3||fall>=2) pr.value="B";
+ else if(Number(lv.value)>=3) pr.value="C"; else pr.value="D";
+ $("evalPriority").textContent=pr.options[pr.selectedIndex].text;
+ const special=$("specialWork").value==="asbestos", high=access!=="none";
+ $("staffRepair").textContent=(special||high||Number(lv.value)>=4||fall>=2)?"🔴 業者対応を推奨":"🟢 軽微な範囲は安全確認後に検討";
+ $("diagnosisBasis").textContent="前回："+ch.value+"／状態Lv."+lv.value+"／落下等："+$("fallRisk").options[$("fallRisk").selectedIndex].text+"／影響："+$("impactRisk").options[$("impactRisk").selectedIndex].text;
  $("baseCost").textContent=rangeText(lo,hi);$("accessCost").textContent=access==="none"?"なし":rangeText(alo,ahi);
  $("miscCost").textContent=rangeText(mlo,mhi);
  $("totalCost").textContent=rangeText(totalLo,totalHi)+($("specialWork").value==="asbestos"?" ＋ 特殊対応費（別途見積）":"");
@@ -300,7 +314,7 @@ function buttonSound(){
  }catch(e){}
 }
 document.addEventListener("click",e=>{if(e.target.closest("button"))buttonSound()});
-$("welcomeStartBtn").onclick=()=>show("setup");$("backWelcome").onclick=()=>show("welcome");
+$("welcomeStartBtn").onclick=()=>show("setup");$("backWelcome").onclick=goHome;$("homeBtn").onclick=goHome;
 function inspectorOptions(selected,second=false){
  let a;try{a=JSON.parse(localStorage.getItem("kasaharaInspectors")||"[]")}catch(e){a=[]}
  if(!Array.isArray(a)||!a.length)a=["大山　竜也"];if(!a.includes("大山　竜也"))a.unshift("大山　竜也");
