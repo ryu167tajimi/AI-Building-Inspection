@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.9</title>
+<title>AI庁舎点検 Ver.4.11</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -70,8 +70,22 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 </style><style>
 #diagnosisContent .comparePhotos{margin-bottom:12px}
 #diagnosisContent .card{margin-top:10px}
-</style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.9</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+</style>
+<style>
+.diag411Hero{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px}
+.diag411Hero>div{background:#eef4ff;border-radius:12px;padding:10px;text-align:center}
+.diag411Hero span{display:block;font-size:12px;color:#65758b}.diag411Hero b{font-size:18px}
+.diag411Compare img{width:100%;max-height:260px;object-fit:contain;background:#eef1f5;border-radius:10px}
+.change411{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.change411 button{min-height:52px;border:2px solid #d9e1eb;background:white;border-radius:12px;font-weight:800}
+.change411 button.selected{border-color:#2563eb;background:#eaf2ff}
+.diag411Big{font-size:24px;font-weight:900;text-align:center;padding:10px}
+#diagnosisV411 textarea{width:100%;box-sizing:border-box;border:1px solid #ccd5df;border-radius:10px;padding:10px;font-size:16px}
+#diagnosisV411 select{width:100%;margin-top:5px}
+#diagnosisV411 label{display:block;margin:12px 0}
+</style>
+</head><body>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.11</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -175,6 +189,94 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <button type="button" id="editDiagnosisBtn" class="primary">✏️ 評価・概算を編集する</button>
 <button type="button" id="backDiagnosisPositions" class="secondary">← 撮影位置一覧へ</button>
 </section>
+
+<section id="diagnosisV411" class="screen">
+  <h2 id="diag411Title">📊 撮影位置の診断</h2>
+  <div class="diag411Hero">
+    <div><span>前回点検</span><b id="diag411PrevDate">2026/10/25</b></div>
+    <div><span>今回点検</span><b id="diag411CurDate">－</b></div>
+  </div>
+
+  <div class="comparePhotos diag411Compare">
+    <div><small>前回写真</small><img id="diag411PrevImg" alt="前回写真"><p id="diag411PrevNone" class="muted"></p></div>
+    <div><small>今回写真</small><img id="diag411CurImg" alt="今回写真"><p id="diag411CurNone" class="muted"></p></div>
+  </div>
+
+  <div class="card">
+    <h3>① 前回からの変化</h3>
+    <div class="change411">
+      <button type="button" data-change="変化なし">🟢 変化なし</button>
+      <button type="button" data-change="変化あり（悪化）">🔴 悪化</button>
+      <button type="button" data-change="変化あり（改善）">🔵 改善</button>
+      <button type="button" data-change="判定困難">⚪ 判定困難</button>
+    </div>
+    <input type="hidden" id="diag411Change" value="判定困難">
+  </div>
+
+  <div class="card">
+    <h3>② 状態・危険性</h3>
+    <label>状態レベル
+      <select id="diag411Level">
+        <option value="1">Lv.1　異常なし・軽微</option>
+        <option value="2">Lv.2　経過観察</option>
+        <option value="3">Lv.3　修繕検討</option>
+        <option value="4">Lv.4　早期対応</option>
+        <option value="5">Lv.5　緊急対応</option>
+      </select>
+    </label>
+    <label>落下・破損等の危険
+      <select id="diag411Fall"><option value="1">低</option><option value="2">中</option><option value="3">高</option></select>
+    </label>
+    <label>人・車両への影響
+      <select id="diag411Impact"><option value="1">低</option><option value="2">中</option><option value="3">高</option></select>
+    </label>
+    <label>判定理由・確認事項
+      <textarea id="diag411Reason" rows="4" placeholder="例：前回写真と比べ、開口部の拡大は明確に確認できない。撮影角度が異なるため判定困難。"></textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3>③ 修繕条件・概算</h3>
+    <label>修繕内容
+      <select id="diag411Repair">
+        <option value="minor">軽微な補修</option>
+        <option value="board">板・天井材等の部分交換</option>
+        <option value="crack">ひび・欠損補修</option>
+        <option value="water">漏水・防水関連</option>
+        <option value="paint">塗装・表面補修</option>
+        <option value="other">その他</option>
+      </select>
+    </label>
+    <label>施工規模
+      <select id="diag411Scale"><option value="1">小</option><option value="2">中</option><option value="3">大</option></select>
+    </label>
+    <label>高所・足場
+      <select id="diag411Height"><option value="0">不要</option><option value="1">脚立・簡易高所</option><option value="2">足場・高所作業が必要</option></select>
+    </label>
+    <label>特殊対応
+      <select id="diag411Special"><option value="0">なし</option><option value="1">あり（アスベスト等・別途見積）</option></select>
+    </label>
+  </div>
+
+  <button type="button" id="diag411Calc" class="primary">📋 診断結果を作成・保存</button>
+
+  <div id="diag411Result" class="card diag411Result" style="display:none">
+    <h3>診断結果</h3>
+    <div id="diag411ChangeResult" class="diag411Big">⚪ 判定困難</div>
+    <table class="evalTable">
+      <tr><th>状態</th><td id="diag411LevelResult">－</td></tr>
+      <tr><th>危険度</th><td id="diag411DangerResult">－</td></tr>
+      <tr><th>優先順位</th><td id="diag411PriorityResult">－</td></tr>
+      <tr><th>概算修繕費</th><td id="diag411CostResult" class="costBig">－</td></tr>
+      <tr><th>職員修繕</th><td id="diag411StaffResult">－</td></tr>
+      <tr><th>判定理由</th><td id="diag411ReasonResult">－</td></tr>
+    </table>
+    <p class="muted">※概算は庁舎管理上の予算検討用の目安です。正式金額は現地確認・業者見積で確定してください。</p>
+  </div>
+
+  <button type="button" id="diag411BackCapture" class="secondary">← 撮影画面へ戻る</button>
+  <button type="button" id="diag411BackPositions" class="secondary">← 撮影位置一覧へ戻る</button>
+</section>
 <section id="history" class="screen"><h2 id="historyTitle">写真履歴</h2><div id="historyList"></div><button id="backCapture" class="secondary">← 撮影画面へ</button></section>
 </main>
 <script>
@@ -238,23 +340,21 @@ async function loadDiagnosticIntoForm(){
  estimateRepair();return d;
 }
 async function showDiagnosis(){
- const d=await getDiagnostic(key(area,pos)), h=await allHistory(key(area,pos));
- const cur=h.length?h[h.length-1]:null, prev=h.length>1?h[h.length-2]:null;
- $("diagnosisTitle").textContent=names[area]+"｜撮影位置 "+String(pos).padStart(2,"0")+"｜診断結果";
- let photos="";
- if(prev||cur)photos='<div class="comparePhotos">'+(prev?'<div><small>前回 '+(prev.inspectionDate||"")+'</small><img src="'+urlFor(prev.blob)+'"></div>':'')+(cur?'<div><small>今回 '+(cur.inspectionDate||"")+'</small><img src="'+urlFor(cur.blob)+'"></div>':'')+'</div>';
- if(!d){
-  $("diagnosisContent").innerHTML=photos+'<div class="card"><b>診断結果はまだ保存されていません。</b><p>「評価・概算を編集する」から、前回写真と今回写真を確認して評価してください。</p></div>';
- }else{
-  $("diagnosisContent").innerHTML=photos+'<div class="card"><h3 style="margin-top:0">'+diagnosisBadge(d.change)+'</h3><table class="evalTable">'+
-   '<tr><th>状態</th><td>'+d.levelText+'</td></tr><tr><th>前回から</th><td><b>'+diagnosisBadge(d.change)+'</b></td></tr>'+
-   '<tr><th>優先度</th><td><b>'+d.priorityText+'</b></td></tr><tr><th>職員修繕</th><td>'+d.staffRepair+'</td></tr>'+
-   '<tr><th>判定根拠</th><td>'+d.basis+'</td></tr><tr><th>本体修繕</th><td>'+d.baseCost+'</td></tr>'+
-   '<tr><th>足場・高所</th><td>'+d.accessCost+'</td></tr><tr><th>諸経費</th><td>'+d.miscCost+'</td></tr>'+
-   '<tr><th>総額概算</th><td><span class="costBig">'+d.totalCost+'</span></td></tr></table>'+
-   '<p class="muted">最終更新：'+new Date(d.updatedAt).toLocaleString("ja-JP")+'</p></div>';
- }
- show("diagnosis");
+ stop();show("diagnosis");
+ $("diagnosisTitle").textContent=(names[area]||area||"点検位置")+"｜撮影位置 "+String(pos||"").padStart(2,"0")+"｜診断結果";
+ $("diagnosisContent").innerHTML='<div class="card"><b>診断結果を読み込んでいます…</b></div>';
+ try{
+  if(!db)await openDB();let d=null,h=[];
+  try{d=await getDiagnostic(key(area,pos))}catch(e){}
+  try{h=await allHistory(key(area,pos))}catch(e){}
+  const cur=h.length?h[h.length-1]:null,prev=h.length>1?h[h.length-2]:null;
+  let photos='<div class="comparePhotos">';
+  photos+=prev?'<div><small>前回 '+(prev.inspectionDate||"")+'</small><img src="'+urlFor(prev.blob)+'"></div>':'<div class="card"><b>前回写真</b><p>確認できません。</p></div>';
+  photos+=cur?'<div><small>今回 '+(cur.inspectionDate||"")+'</small><img src="'+urlFor(cur.blob)+'"></div>':'<div class="card"><b>今回写真</b><p>まだ撮影されていません。</p></div>';
+  photos+='</div>';
+  if(!d){$("diagnosisContent").innerHTML=photos+'<div class="card"><h3>⚪ 判定待ち</h3><p>診断結果はまだ保存されていません。</p><p><b>「評価・概算を編集する」から判定してください。</b></p><p>🟢変化なし　🔴変化あり（悪化）　🔵変化あり（改善）　⚪判定困難</p></div>';return}
+  $("diagnosisContent").innerHTML=photos+'<div class="card"><h3>'+diagnosisBadge(d.change)+'</h3><table class="evalTable"><tr><th>状態</th><td>'+(d.levelText||"－")+'</td></tr><tr><th>前回から</th><td><b>'+diagnosisBadge(d.change)+'</b></td></tr><tr><th>優先度</th><td><b>'+(d.priorityText||"－")+'</b></td></tr><tr><th>職員修繕</th><td>'+(d.staffRepair||"－")+'</td></tr><tr><th>判定根拠</th><td>'+(d.basis||"－")+'</td></tr><tr><th>本体修繕</th><td>'+(d.baseCost||"－")+'</td></tr><tr><th>足場・高所</th><td>'+(d.accessCost||"－")+'</td></tr><tr><th>諸経費</th><td>'+(d.miscCost||"－")+'</td></tr><tr><th>総額概算</th><td><span class="costBig">'+(d.totalCost||"－")+'</span></td></tr></table></div>';
+ }catch(e){$("diagnosisContent").innerHTML='<div class="card"><h3>⚠️ 読み込みエラー</h3><p>評価・概算を編集するボタンから再度開いてください。</p></div>'}
 }
 function stop(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("video").srcObject=null;$("video").style.transform="scale(1)";if($("zoomControls"))$("zoomControls").style.display="none"}
 function urlFor(blob){return URL.createObjectURL(blob)}
@@ -458,4 +558,97 @@ document.addEventListener("click",async function(e){
 });
 openDB().then(async()=>{await seedBaseline20261025();await updatePreviousInspection()}).catch(()=>{$("setup").innerHTML='<div class="card"><h2>保存機能を開始できませんでした</h2><p>通常ブラウザで開き直してください。</p></div>'});
 })();
+
+document.addEventListener("click",function(e){
+ const b=e.target.closest&&e.target.closest("#diagnosisBtn,.historyDiagnosisBtn");
+ if(!b)return;e.preventDefault();showDiagnosis();
+});
+
+function diag411Key(){return "facility_diag_v411_"+key(area,pos)}
+function diag411Badge(v){
+ if(v==="変化あり（悪化）")return "🔴 変化あり（悪化）";
+ if(v==="変化あり（改善）")return "🔵 変化あり（改善）";
+ if(v==="変化なし")return "🟢 変化なし";
+ return "⚪ 判定困難";
+}
+function diag411Priority(level,fall,impact,change){
+ level=+level;fall=+fall;impact=+impact;
+ if(level>=5||fall>=3||(change==="変化あり（悪化）"&&level>=4))return "A：最優先・早期対応";
+ if(level>=4||fall>=2||impact>=3||change==="変化あり（悪化）")return "B：優先対応";
+ if(level>=3||impact>=2)return "C：計画修繕";
+ return "D：経過観察";
+}
+function diag411Cost(repair,scale,height,special){
+ const base={minor:[1,5],board:[8,25],crack:[3,12],water:[10,40],paint:[5,20],other:[5,20]}[repair]||[5,20];
+ const mult={1:1,2:2,3:4}[scale]||1;
+ let lo=base[0]*mult,hi=base[1]*mult;
+ if(+height===1){lo+=2;hi+=8}
+ if(+height===2){lo+=10;hi+=35}
+ let txt=lo+"～"+hi+"万円程度";
+ if(+special===1)txt+=" ＋ 特殊対応費（別途見積）";
+ return txt;
+}
+function diag411Collect(){
+ const change=$("diag411Change").value,level=$("diag411Level").value,fall=$("diag411Fall").value,impact=$("diag411Impact").value;
+ const repair=$("diag411Repair").value,scale=$("diag411Scale").value,height=$("diag411Height").value,special=$("diag411Special").value;
+ const danger=Math.max(+level,+fall>=3?5:+fall>=2?4:1,+impact>=3?4:1);
+ const priority=diag411Priority(level,fall,impact,change);
+ const cost=diag411Cost(repair,scale,height,special);
+ const staff=(+special===1||+height===2||+fall>=2||+level>=4)?"🔴 業者対応を推奨":"🟢 安全確認後、軽微な範囲のみ検討";
+ return {change,level,fall,impact,repair,scale,height,special,reason:$("diag411Reason").value.trim(),danger,priority,cost,staff,updatedAt:new Date().toISOString()}
+}
+function diag411Render(d){
+ $("diag411Result").style.display="block";
+ $("diag411ChangeResult").textContent=diag411Badge(d.change);
+ $("diag411LevelResult").textContent="Lv."+d.level+" / 5";
+ $("diag411DangerResult").textContent=d.danger+" / 5";
+ $("diag411PriorityResult").textContent=d.priority;
+ $("diag411CostResult").textContent=d.cost;
+ $("diag411StaffResult").textContent=d.staff;
+ $("diag411ReasonResult").textContent=d.reason||"未記載";
+}
+function diag411LoadForm(d){
+ if(!d)return;
+ ["Change","Level","Fall","Impact","Repair","Scale","Height","Special"].forEach(n=>{
+  const id="diag411"+n,k=n.charAt(0).toLowerCase()+n.slice(1);
+  if($(id)&&d[k]!==undefined)$(id).value=d[k];
+ });
+ $("diag411Reason").value=d.reason||"";
+ document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b.dataset.change===d.change));
+ diag411Render(d);
+}
+async function openDiagnosis411(){
+ stop();
+ show("diagnosisV411");
+ $("diag411Title").textContent="📊 "+(names[area]||area)+"｜撮影位置 "+String(pos).padStart(2,"0")+" の診断";
+ $("diag411PrevImg").removeAttribute("src");$("diag411CurImg").removeAttribute("src");
+ $("diag411PrevNone").textContent="";$("diag411CurNone").textContent="";
+ $("diag411PrevDate").textContent="2026/10/25";
+ $("diag411CurDate").textContent=$("inspectionDate")?.value||new Date().toLocaleDateString("ja-JP");
+ try{
+  if(!db)await openDB();
+  const h=await allHistory(key(area,pos));
+  const cur=h.length?h[h.length-1]:null,prev=h.length>1?h[h.length-2]:null;
+  if(prev){$("diag411PrevImg").src=urlFor(prev.blob);$("diag411PrevDate").textContent=prev.inspectionDate||"前回"}
+  else{$("diag411PrevImg").style.display="none";$("diag411PrevNone").textContent="前回写真を確認できません。"}
+  if(cur){$("diag411CurImg").src=urlFor(cur.blob);$("diag411CurImg").style.display="block";$("diag411CurDate").textContent=cur.inspectionDate||"今回"}
+  else{$("diag411CurImg").style.display="none";$("diag411CurNone").textContent="今回写真はまだありません。"}
+ }catch(e){}
+ let d=null;try{d=JSON.parse(localStorage.getItem(diag411Key())||"null")}catch(e){}
+ if(d)diag411LoadForm(d);else{
+  $("diag411Change").value="判定困難";
+  document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b.dataset.change==="判定困難"));
+  $("diag411Result").style.display="none";
+ }
+}
+document.addEventListener("click",function(e){
+ const ch=e.target.closest&&e.target.closest(".change411 button");
+ if(ch){e.preventDefault();$("diag411Change").value=ch.dataset.change;document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b===ch));return}
+ const d=e.target.closest&&e.target.closest("#diagnosisBtn,.historyDiagnosisBtn");
+ if(d){e.preventDefault();e.stopImmediatePropagation();openDiagnosis411();return}
+ const calc=e.target.closest&&e.target.closest("#diag411Calc");
+ if(calc){e.preventDefault();const data=diag411Collect();localStorage.setItem(diag411Key(),JSON.stringify(data));diag411Render(data);return}
+ if(e.target.closest&&e.target.closest("#diag411BackCapture")){e.preventDefault();show("capture");return}
+ if(e.target.closest&&e.target.closest("#diag411BackPositions")){e.preventDefault();show("positions");return}
+},true);
 </script></body></html>
