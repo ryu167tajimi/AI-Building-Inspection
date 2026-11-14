@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.13</title>
+<title>AI庁舎点検 Ver.4.15</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -84,8 +84,12 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 #diagnosisV411 select{width:100%;margin-top:5px}
 #diagnosisV411 label{display:block;margin:12px 0}
 </style>
-</head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.13</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+<style>
+.zoomControls{grid-template-columns:minmax(120px,1fr) auto minmax(120px,1fr)!important}
+.zoomBtn{white-space:nowrap;font-size:14px!important;padding-left:8px!important;padding-right:8px!important}
+@media(max-width:420px){.zoomBtn{font-size:12px!important}.zoomControls{gap:5px!important}}
+</style></head><body>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.15</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -146,12 +150,12 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <div class="shutterBar">
 <div id="zoomControls" class="zoomControls" style="display:none">
 <button type="button" id="wideBtn" class="zoomBtn">0.5×</button>
-<button type="button" id="zoomOutBtn" class="zoomBtn">−</button>
+<button type="button" id="zoomOutBtn" class="zoomBtn" title="ズームアウト">➖ ズームアウト</button>
 <b id="zoomValue" class="zoomValue">1.0×</b>
-<button type="button" id="zoomInBtn" class="zoomBtn">＋</button>
+<button type="button" id="zoomInBtn" class="zoomBtn">➕ ズームアップ</button>
 </div>
 <button type="button" id="shotBtn" class="shot" style="display:none">📸 撮影する</button>
-</div>
+</div><div class="muted" style="text-align:center;margin:-4px 0 8px">ズームアウト：倍率を下げて画角を広げます。1.0×から先は対応端末で超広角レンズへの切替を試します。</div>
 <button id="switchBtn" class="secondary">🔄 カメラ切替</button>
 <div id="review"><h2>今回の撮影写真</h2><img id="reviewImg" class="reviewImg">
 <div class="assessBox">
@@ -449,18 +453,45 @@ function applyCameraZoom(){
  $("zoomValue").textContent=cameraZoom.toFixed(1)+"×";
 }
 function zoomIn(){cameraZoom=Math.min(3,cameraZoom+0.5);applyCameraZoom()}
-function zoomOut(){cameraZoom=Math.max(1,cameraZoom-0.5);applyCameraZoom()}
+async function zoomOut(){
+ if(cameraZoom>1){
+  cameraZoom=Math.max(1,cameraZoom-0.5);
+  applyCameraZoom();
+  $("status").textContent="ズームを "+cameraZoom.toFixed(1)+"× に戻しました。";
+  return;
+ }
+ // 1.0×より広くするにはデジタル処理ではなく実際の広角レンズが必要。
+ await useWideCamera();
+}
 async function useWideCamera(){
  try{
-  if(!navigator.mediaDevices?.enumerateDevices){$("status").textContent="この端末では0.5×広角切替に対応していません。";return}
+  if(!navigator.mediaDevices?.enumerateDevices){
+   $("status").textContent="⚠ このブラウザは広角カメラ一覧を取得できません。通常ブラウザで開いてください。";
+   return;
+  }
+  // Permission is normally already granted once camera() has run; labels are more likely to be available.
   const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
-  const rear=devices.filter(d=>/back|rear|environment|背面/i.test(d.label));
-  const pool=rear.length?rear:devices;
-  const wide=pool.find(d=>/ultra|wide|0\.5|広角|超広角/i.test(d.label));
-  if(!wide){$("status").textContent="0.5×：ブラウザから超広角カメラを特定できません。端末標準カメラでは利用できる場合があります。";return}
-  selectedVideoDeviceId=wide.deviceId;facing="environment";await camera();
-  $("status").textContent="0.5×広角カメラに切り替えました。";
- }catch(e){$("status").textContent="0.5×広角カメラへ切り替えできませんでした。"}
+  const labeled=devices.filter(d=>d.label);
+  const rear=labeled.filter(d=>/back|rear|environment|背面|後面/i.test(d.label));
+  const pool=rear.length?rear:(labeled.length?labeled:devices);
+  const wide=pool.find(d=>/ultra[\s-]?wide|ultrawide|0[\.,]5|wide angle|広角|超広角/i.test(d.label));
+  if(wide){
+   selectedVideoDeviceId=wide.deviceId;
+   facing="environment";
+   await camera();
+   $("zoomValue").textContent="0.5×";
+   $("status").textContent="✓ 超広角カメラへ切り替えました。";
+   return;
+  }
+  // Some Android browsers expose multiple rear cameras but hide meaningful lens labels.
+  if(rear.length>1 || pool.length>1){
+   $("status").textContent="⚠ 複数のカメラは検出しましたが、ブラウザが超広角レンズ名を公開していないため0.5×を安全に特定できません。端末標準カメラ、または通常ブラウザをご利用ください。";
+  }else{
+   $("status").textContent="⚠ このブラウザからは超広角カメラを利用できません。1.0×が最も広い画角です。端末標準カメラでは0.5×を利用できる場合があります。";
+  }
+ }catch(e){
+  $("status").textContent="⚠ 超広角カメラへの切替に失敗しました。通常ブラウザまたは端末標準カメラをご利用ください。";
+ }
 }
 async function camera(){
  stop();$("status").textContent="カメラを起動しています…";
@@ -649,7 +680,7 @@ async function openDiagnosis411(){
 document.addEventListener("click",function(e){
  const ch=e.target.closest&&e.target.closest(".change411 button");
  if(ch){e.preventDefault();$("diag411Change").value=ch.dataset.change;document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b===ch));return}
- const d=null; // Ver.4.13: diagnosis buttons use direct onclick modal
+ const d=null; // Ver.4.15: diagnosis buttons use direct onclick modal
  const calc=e.target.closest&&e.target.closest("#diag411Calc");
  if(calc){e.preventDefault();const data=diag411Collect();localStorage.setItem(diag411Key(),JSON.stringify(data));diag411Render(data);return}
  if(e.target.closest&&e.target.closest("#diag411BackCapture")){e.preventDefault();show("capture");return}
