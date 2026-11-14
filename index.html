@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.15</title>
+<title>AI庁舎点検 Ver.4.16</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -89,7 +89,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .zoomBtn{white-space:nowrap;font-size:14px!important;padding-left:8px!important;padding-right:8px!important}
 @media(max-width:420px){.zoomBtn{font-size:12px!important}.zoomControls{gap:5px!important}}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.15</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.16</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -150,12 +150,12 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <div class="shutterBar">
 <div id="zoomControls" class="zoomControls" style="display:none">
 <button type="button" id="wideBtn" class="zoomBtn">0.5×</button>
-<button type="button" id="zoomOutBtn" class="zoomBtn" title="ズームアウト">➖ ズームアウト</button>
+<button type="button" id="wideDefaultBtn" class="zoomBtn">📐 最大画角</button>
 <b id="zoomValue" class="zoomValue">1.0×</b>
 <button type="button" id="zoomInBtn" class="zoomBtn">➕ ズームアップ</button>
 </div>
 <button type="button" id="shotBtn" class="shot" style="display:none">📸 撮影する</button>
-</div><div class="muted" style="text-align:center;margin:-4px 0 8px">ズームアウト：倍率を下げて画角を広げます。1.0×から先は対応端末で超広角レンズへの切替を試します。</div>
+</div><div class="muted" style="text-align:center;margin:-4px 0 8px">起動時から利用可能な背面カメラの中で広角候補を優先します。📐最大画角で初期状態へ戻せます。</div>
 <button id="switchBtn" class="secondary">🔄 カメラ切替</button>
 <div id="review"><h2>今回の撮影写真</h2><img id="reviewImg" class="reviewImg">
 <div class="assessBox">
@@ -493,14 +493,31 @@ async function useWideCamera(){
   $("status").textContent="⚠ 超広角カメラへの切替に失敗しました。通常ブラウザまたは端末標準カメラをご利用ください。";
  }
 }
-async function camera(){
- stop();$("status").textContent="カメラを起動しています…";
- if(!isSecureContext){$("status").textContent="⚠ HTTPS環境で開いてください。";return}
- let last;
- const preferred=selectedVideoDeviceId?{audio:false,video:{deviceId:{exact:selectedVideoDeviceId}}}:{audio:false,video:{facingMode:{ideal:facing}}};
- for(const c of [preferred,{audio:false,video:{facingMode:{ideal:facing}}},{audio:false,video:true}]){
-  try{stream=await navigator.mediaDevices.getUserMedia(c);$("video").srcObject=stream;await $("video").play();cameraZoom=1;applyCameraZoom();$("zoomControls").style.display="flex";$("status").textContent="② 構図を合わせて「撮影する」を押してください。";$("camBtn").style.display="none";$("shotBtn").style.display="block";return}catch(e){last=e}}
- $("status").textContent=last?.name==="NotAllowedError"?"⚠ カメラ権限を許可してください。":"⚠ カメラ起動失敗："+(last?.name||"不明")
+async function camera(preferWidest=true){
+ stop();
+ try{
+  let constraints={audio:false,video:{facingMode:{ideal:facing},width:{ideal:3840},height:{ideal:2160}}};
+  if(selectedVideoDeviceId){constraints.video.deviceId={exact:selectedVideoDeviceId};delete constraints.video.facingMode}
+  stream=await navigator.mediaDevices.getUserMedia(constraints);
+  $("video").srcObject=stream;await $("video").play().catch(()=>{});
+  if(preferWidest&&facing==="environment"&&!selectedVideoDeviceId){
+   try{
+    const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
+    const labeled=devices.filter(d=>d.label);
+    const rear=labeled.filter(d=>/back|rear|environment|背面|後面/i.test(d.label));
+    const pool=rear.length?rear:labeled;
+    const wide=pool.find(d=>/ultra[\s-]?wide|ultrawide|0[\.,]5|wide angle|広角|超広角/i.test(d.label));
+    if(wide&&wide.deviceId){
+     stream.getTracks().forEach(t=>t.stop());selectedVideoDeviceId=wide.deviceId;
+     stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{deviceId:{exact:wide.deviceId},width:{ideal:3840},height:{ideal:2160}}});
+     $("video").srcObject=stream;await $("video").play().catch(()=>{});
+     cameraZoom=1;$("zoomValue").textContent="広角";$("status").textContent="✓ 広角候補カメラを初期選択しました。";return;
+    }
+   }catch(e){}
+  }
+  cameraZoom=1;$("zoomValue").textContent="1.0×";
+  $("status").textContent="カメラ起動完了。現在利用できる背面カメラで最大画角を使用しています。";
+ }catch(e){$("status").textContent="⚠ カメラを起動できません。カメラ権限と通常ブラウザでの利用を確認してください。"}
 }
 function shoot(){
  const v=$("video"),c=$("canvas");if(!stream||v.readyState<2||!v.videoWidth){$("status").textContent="⚠ カメラ映像の準備ができていません。";return}
@@ -680,7 +697,7 @@ async function openDiagnosis411(){
 document.addEventListener("click",function(e){
  const ch=e.target.closest&&e.target.closest(".change411 button");
  if(ch){e.preventDefault();$("diag411Change").value=ch.dataset.change;document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b===ch));return}
- const d=null; // Ver.4.15: diagnosis buttons use direct onclick modal
+ const d=null; // Ver.4.16: diagnosis buttons use direct onclick modal
  const calc=e.target.closest&&e.target.closest("#diag411Calc");
  if(calc){e.preventDefault();const data=diag411Collect();localStorage.setItem(diag411Key(),JSON.stringify(data));diag411Render(data);return}
  if(e.target.closest&&e.target.closest("#diag411BackCapture")){e.preventDefault();show("capture");return}
@@ -721,6 +738,12 @@ async function openDirectDiagnosis(){
  }
  body.innerHTML=html;
 }
+
+async function resetMaxView(){cameraZoom=1;selectedVideoDeviceId="";await camera(true)}
+document.addEventListener("click",function(e){
+ const b=e.target.closest&&e.target.closest("#wideDefaultBtn");if(!b)return;
+ e.preventDefault();resetMaxView();
+});
 </script>
 <div id="diagDirectModal" style="display:none;position:fixed;inset:0;z-index:99999;background:#f5f7fa;overflow:auto;padding:14px;box-sizing:border-box">
  <div style="max-width:760px;margin:auto">
