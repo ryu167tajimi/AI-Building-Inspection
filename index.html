@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.7</title>
+<title>AI庁舎点検 Ver.4.9</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -54,7 +54,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 #saveInspectionBtn,#manageInspectionBtn{position:relative;z-index:20;pointer-events:auto}
 
 .zoomControls{display:flex;align-items:center;justify-content:center;gap:18px;margin:0 0 10px}
-.zoomBtn{width:58px!important;height:48px!important;margin:0!important;padding:0!important;border-radius:24px!important;font-size:28px!important;font-weight:900!important;background:#e2e8f0!important;color:#0f172a!important;border:1px solid #94a3b8!important}
+.zoomBtn{min-width:58px!important;height:48px!important;margin:0!important;padding:0!important;border-radius:24px!important;font-size:28px!important;font-weight:900!important;background:#e2e8f0!important;color:#0f172a!important;border:1px solid #94a3b8!important}
 .zoomValue{min-width:60px;text-align:center;font-size:20px}
 .cam{overflow:hidden}#video{transform-origin:center center}
 
@@ -67,8 +67,11 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .comparePhotos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.comparePhotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#e2e8f0}
 @media(max-width:420px){.assessGrid{grid-template-columns:1fr}.comparePhotos{gap:5px}}
 .homeFloat{position:fixed;right:14px;top:64px;z-index:9999;width:auto;min-width:116px;margin:0;padding:11px 14px;border:0;border-radius:999px;background:#0f172a;color:#fff;font-weight:900;box-shadow:0 4px 14px #0004;display:none}.homeFloat.show{display:block}.homeFloat:active{transform:scale(.97)}
+</style><style>
+#diagnosisContent .comparePhotos{margin-bottom:12px}
+#diagnosisContent .card{margin-top:10px}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.7</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.9</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -128,6 +131,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <button id="camBtn" class="primary">📷 カメラを起動</button>
 <div class="shutterBar">
 <div id="zoomControls" class="zoomControls" style="display:none">
+<button type="button" id="wideBtn" class="zoomBtn">0.5×</button>
 <button type="button" id="zoomOutBtn" class="zoomBtn">−</button>
 <b id="zoomValue" class="zoomValue">1.0×</b>
 <button type="button" id="zoomInBtn" class="zoomBtn">＋</button>
@@ -161,8 +165,15 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 </div>
 <button id="saveBtn" class="green">💾 この写真を保存</button>
 <button id="retryBtn" class="secondary">↻ 撮り直す</button></div>
+<button type="button" id="diagnosisBtn" class="primary">📊 この位置の診断結果を見る</button>
 <button id="historyBtn" class="secondary">🕘 この位置の写真履歴を見る</button>
 <canvas id="canvas" hidden></canvas><button id="backPositions" class="secondary">← 撮影位置一覧へ</button>
+</section>
+<section id="diagnosis" class="screen">
+<h2 id="diagnosisTitle">診断結果</h2>
+<div id="diagnosisContent"></div>
+<button type="button" id="editDiagnosisBtn" class="primary">✏️ 評価・概算を編集する</button>
+<button type="button" id="backDiagnosisPositions" class="secondary">← 撮影位置一覧へ</button>
 </section>
 <section id="history" class="screen"><h2 id="historyTitle">写真履歴</h2><div id="historyList"></div><button id="backCapture" class="secondary">← 撮影画面へ</button></section>
 </main>
@@ -188,10 +199,63 @@ async function seedBaseline20261025(){
  ins.put({id:"2026-10-25",date:"2026-10-25",inspector1:"既存点検記録",inspector2:"",inspectors:"既存点検記録",savedAt:"2026-10-25T10:00:00+09:00",photoCount:47,photos:BASELINE_20261025.map(x=>({area:x.area,position:x.position,inspector:"既存点検記録"})),source:"10月25日常点検結果状況（写真）.xlsx",baseline:true});
  return new Promise((ok,no)=>{tx.oncomplete=()=>ok(added);tx.onerror=()=>no(tx.error)});
 }
-function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("KasaharaFacilityInspectionHistory",2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains("history"))d.createObjectStore("history",{keyPath:"id",autoIncrement:true}).createIndex("location","location",{unique:false});if(!d.objectStoreNames.contains("inspections"))d.createObjectStore("inspections",{keyPath:"id"})};r.onsuccess=e=>{db=e.target.result;resolve(db)};r.onerror=()=>reject(r.error)})}
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("KasaharaFacilityInspectionHistory",3);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains("history"))d.createObjectStore("history",{keyPath:"id",autoIncrement:true}).createIndex("location","location",{unique:false});if(!d.objectStoreNames.contains("inspections"))d.createObjectStore("inspections",{keyPath:"id"});if(!d.objectStoreNames.contains("diagnostics"))d.createObjectStore("diagnostics",{keyPath:"location"})};r.onsuccess=e=>{db=e.target.result;resolve(db)};r.onerror=()=>reject(r.error)})}
 function allHistory(k){return new Promise((resolve,reject)=>{const r=db.transaction("history","readonly").objectStore("history").index("location").getAll(k);r.onsuccess=()=>resolve((r.result||[]).sort((a,b)=>new Date(a.capturedAt)-new Date(b.capturedAt)));r.onerror=()=>reject(r.error)})}
 function getPhoto(k){return allHistory(k).then(h=>h.length?h[h.length-1]:null)}
 function putPhoto(k,blob){return new Promise((resolve,reject)=>{const r=db.transaction("history","readwrite").objectStore("history").add({location:k,blob,inspectionDate:window.currentInspectionDate,inspector:window.currentInspector,capturedAt:new Date().toISOString()});r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
+
+function getDiagnostic(k){return new Promise((resolve,reject)=>{const r=db.transaction("diagnostics","readonly").objectStore("diagnostics").get(k);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}
+function putDiagnostic(k,data){return new Promise((resolve,reject)=>{const r=db.transaction("diagnostics","readwrite").objectStore("diagnostics").put({location:k,...data,updatedAt:new Date().toISOString()});r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
+function diagnosisBadge(change){
+ if(change==="変化あり（悪化）")return "🔴 変化あり（悪化）";
+ if(change==="変化あり（改善）")return "🔵 変化あり（改善）";
+ if(change==="変化なし")return "🟢 変化なし";
+ return "⚪ "+(change||"判定困難");
+}
+async function saveCurrentDiagnostic(){
+ const data={
+  inspectionDate:window.currentInspectionDate||"",
+  level:$("conditionLevel").value,
+  levelText:$("conditionLevel").options[$("conditionLevel").selectedIndex].text,
+  change:$("changeState").value,
+  priority:$("priority").value,
+  priorityText:$("priority").options[$("priority").selectedIndex].text,
+  repairType:$("repairType").value,repairQty:$("repairQty").value,repairUnit:$("repairUnit").value,
+  heightWork:$("heightWork").value,scaffoldArea:$("scaffoldArea").value,specialWork:$("specialWork").value,
+  impactRisk:$("impactRisk").value,fallRisk:$("fallRisk").value,
+  staffRepair:$("staffRepair").textContent,basis:$("diagnosisBasis").textContent,
+  baseCost:$("baseCost").textContent,accessCost:$("accessCost").textContent,miscCost:$("miscCost").textContent,totalCost:$("totalCost").textContent
+ };
+ await putDiagnostic(key(area,pos),data);
+ return data;
+}
+async function loadDiagnosticIntoForm(){
+ const d=await getDiagnostic(key(area,pos));if(!d)return null;
+ if(d.level)$("conditionLevel").value=d.level;if(d.change)$("changeState").value=d.change;if(d.priority)$("priority").value=d.priority;
+ if(d.repairType)$("repairType").value=d.repairType;if(d.repairQty!==undefined)$("repairQty").value=d.repairQty;if(d.repairUnit)$("repairUnit").value=d.repairUnit;
+ if(d.heightWork)$("heightWork").value=d.heightWork;if(d.scaffoldArea!==undefined)$("scaffoldArea").value=d.scaffoldArea;if(d.specialWork)$("specialWork").value=d.specialWork;
+ if(d.impactRisk)$("impactRisk").value=d.impactRisk;if(d.fallRisk)$("fallRisk").value=d.fallRisk;
+ estimateRepair();return d;
+}
+async function showDiagnosis(){
+ const d=await getDiagnostic(key(area,pos)), h=await allHistory(key(area,pos));
+ const cur=h.length?h[h.length-1]:null, prev=h.length>1?h[h.length-2]:null;
+ $("diagnosisTitle").textContent=names[area]+"｜撮影位置 "+String(pos).padStart(2,"0")+"｜診断結果";
+ let photos="";
+ if(prev||cur)photos='<div class="comparePhotos">'+(prev?'<div><small>前回 '+(prev.inspectionDate||"")+'</small><img src="'+urlFor(prev.blob)+'"></div>':'')+(cur?'<div><small>今回 '+(cur.inspectionDate||"")+'</small><img src="'+urlFor(cur.blob)+'"></div>':'')+'</div>';
+ if(!d){
+  $("diagnosisContent").innerHTML=photos+'<div class="card"><b>診断結果はまだ保存されていません。</b><p>「評価・概算を編集する」から、前回写真と今回写真を確認して評価してください。</p></div>';
+ }else{
+  $("diagnosisContent").innerHTML=photos+'<div class="card"><h3 style="margin-top:0">'+diagnosisBadge(d.change)+'</h3><table class="evalTable">'+
+   '<tr><th>状態</th><td>'+d.levelText+'</td></tr><tr><th>前回から</th><td><b>'+diagnosisBadge(d.change)+'</b></td></tr>'+
+   '<tr><th>優先度</th><td><b>'+d.priorityText+'</b></td></tr><tr><th>職員修繕</th><td>'+d.staffRepair+'</td></tr>'+
+   '<tr><th>判定根拠</th><td>'+d.basis+'</td></tr><tr><th>本体修繕</th><td>'+d.baseCost+'</td></tr>'+
+   '<tr><th>足場・高所</th><td>'+d.accessCost+'</td></tr><tr><th>諸経費</th><td>'+d.miscCost+'</td></tr>'+
+   '<tr><th>総額概算</th><td><span class="costBig">'+d.totalCost+'</span></td></tr></table>'+
+   '<p class="muted">最終更新：'+new Date(d.updatedAt).toLocaleString("ja-JP")+'</p></div>';
+ }
+ show("diagnosis");
+}
 function stop(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("video").srcObject=null;$("video").style.transform="scale(1)";if($("zoomControls"))$("zoomControls").style.display="none"}
 function urlFor(blob){return URL.createObjectURL(blob)}
 
@@ -236,7 +300,7 @@ async function openCapture(p){
  const rec=await getPhoto(key(area,pos));window.previousInspectionRecord=rec;
  if(rec){if(previewURL)URL.revokeObjectURL(previewURL);previewURL=urlFor(rec.blob);$("overlay").src=previewURL;$("overlay").style.display="block";$("opacityWrap").style.display="block";$("guide").textContent="前回："+(rec.inspectionDate||"記録なし")+"／点検者："+(rec.inspector||"記録なし")+"。半透明写真に構図を合わせて撮影してください。"}
  else{$("overlay").removeAttribute("src");$("overlay").style.display="none";$("opacityWrap").style.display="none";$("guide").textContent="初回撮影です。この写真が次回から前回写真になります。"}
- $("status").textContent="① カメラを起動してください。";$("camBtn").style.display="block";$("shotBtn").style.display="none";show("capture")
+ $("status").textContent="① カメラを起動してください。";$("camBtn").style.display="block";$("shotBtn").style.display="none";await loadDiagnosticIntoForm();show("capture")
 }
 
 
@@ -272,18 +336,33 @@ function estimateRepair(){
  $("baseCost").textContent=rangeText(lo,hi);$("accessCost").textContent=access==="none"?"なし":rangeText(alo,ahi);
  $("miscCost").textContent=rangeText(mlo,mhi);
  $("totalCost").textContent=rangeText(totalLo,totalHi)+($("specialWork").value==="asbestos"?" ＋ 特殊対応費（別途見積）":"");
+ if(db&&area&&pos)saveCurrentDiagnostic().catch(()=>{});
 }
-let cameraZoom=1;
+let cameraZoom=1;let selectedVideoDeviceId=null;
 function applyCameraZoom(){
  $("video").style.transform="scale("+cameraZoom+")";
  $("zoomValue").textContent=cameraZoom.toFixed(1)+"×";
 }
 function zoomIn(){cameraZoom=Math.min(3,cameraZoom+0.5);applyCameraZoom()}
 function zoomOut(){cameraZoom=Math.max(1,cameraZoom-0.5);applyCameraZoom()}
+async function useWideCamera(){
+ try{
+  if(!navigator.mediaDevices?.enumerateDevices){$("status").textContent="この端末では0.5×広角切替に対応していません。";return}
+  const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
+  const rear=devices.filter(d=>/back|rear|environment|背面/i.test(d.label));
+  const pool=rear.length?rear:devices;
+  const wide=pool.find(d=>/ultra|wide|0\.5|広角|超広角/i.test(d.label));
+  if(!wide){$("status").textContent="0.5×：ブラウザから超広角カメラを特定できません。端末標準カメラでは利用できる場合があります。";return}
+  selectedVideoDeviceId=wide.deviceId;facing="environment";await camera();
+  $("status").textContent="0.5×広角カメラに切り替えました。";
+ }catch(e){$("status").textContent="0.5×広角カメラへ切り替えできませんでした。"}
+}
 async function camera(){
  stop();$("status").textContent="カメラを起動しています…";
  if(!isSecureContext){$("status").textContent="⚠ HTTPS環境で開いてください。";return}
- let last;for(const c of [{audio:false,video:{facingMode:{ideal:facing}}},{audio:false,video:true}]){
+ let last;
+ const preferred=selectedVideoDeviceId?{audio:false,video:{deviceId:{exact:selectedVideoDeviceId}}}:{audio:false,video:{facingMode:{ideal:facing}}};
+ for(const c of [preferred,{audio:false,video:{facingMode:{ideal:facing}}},{audio:false,video:true}]){
   try{stream=await navigator.mediaDevices.getUserMedia(c);$("video").srcObject=stream;await $("video").play();cameraZoom=1;applyCameraZoom();$("zoomControls").style.display="flex";$("status").textContent="② 構図を合わせて「撮影する」を押してください。";$("camBtn").style.display="none";$("shotBtn").style.display="block";return}catch(e){last=e}}
  $("status").textContent=last?.name==="NotAllowedError"?"⚠ カメラ権限を許可してください。":"⚠ カメラ起動失敗："+(last?.name||"不明")
 }
@@ -293,13 +372,13 @@ function shoot(){
  const ctx=c.getContext("2d"),sw=v.videoWidth/cameraZoom,sh=v.videoHeight/cameraZoom,sx=(v.videoWidth-sw)/2,sy=(v.videoHeight-sh)/2;
  ctx.drawImage(v,sx,sy,sw,sh,0,0,c.width,c.height);
  c.toBlob(blob=>{capturedBlob=blob;const cur=urlFor(blob);$("reviewImg").src=cur;$("currentAssessImg").src=cur;
- if(window.previousInspectionRecord){$("prevAssessImg").src=urlFor(window.previousInspectionRecord.blob);$("prevCompare").style.display="grid";$("changeState").value="判定困難"}else{$("prevCompare").style.display="none";$("changeState").value="初回・比較なし"}
+ if(window.previousInspectionRecord){$("prevAssessImg").src=urlFor(window.previousInspectionRecord.blob);$("prevCompare").style.display="grid";$("changeState").value="判定困難";$("evalChange").textContent="⚪ 判定困難"}else{$("prevCompare").style.display="none";$("changeState").value="初回・比較なし"}
  $("review").style.display="block";$("status").textContent="✓ 撮影しました。写真を確認して保存してください。";$("shotBtn").style.display="none";stop()},"image/jpeg",.9)
 }
 async function save(){
  if(!capturedBlob)return;try{await putPhoto(key(area,pos),capturedBlob);$("status").textContent="✓ 保存しました。次回、この写真が前回写真として表示されます。";$("review").style.display="none"}catch(e){$("status").textContent="⚠ 保存できませんでした："+e.name}
 }
-async function renderHistory(){const h=(await allHistory(key(area,pos))).reverse(),box=$("historyList");$("historyTitle").textContent=names[area]+"｜撮影位置 "+String(pos).padStart(2,"0")+"｜写真履歴";box.innerHTML="";if(!h.length)box.innerHTML='<div class="card">保存された写真履歴はありません。</div>';h.forEach((r,i)=>{const d=document.createElement("div");d.className="card";d.style.marginBottom="10px";const when=new Date(r.capturedAt).toLocaleString("ja-JP");d.innerHTML="<b>"+(i===0?"最新":"過去")+"</b><p>点検日："+(r.inspectionDate||"記録なし")+"<br>点検者："+(r.inspector||"記録なし")+"<br>撮影日時："+when+"</p><img style='width:100%;border-radius:12px' src='"+URL.createObjectURL(r.blob)+"'>";box.appendChild(d)});show("history")}
+async function renderHistory(){const h=(await allHistory(key(area,pos))).reverse(),box=$("historyList");$("historyTitle").textContent=names[area]+"｜撮影位置 "+String(pos).padStart(2,"0")+"｜写真履歴";box.innerHTML="";if(!h.length)box.innerHTML='<div class="card">保存された写真履歴はありません。</div>';h.forEach((r,i)=>{const d=document.createElement("div");d.className="card";d.style.marginBottom="10px";const when=new Date(r.capturedAt).toLocaleString("ja-JP");d.innerHTML="<b>"+(i===0?"最新":"過去")+"</b><p>点検日："+(r.inspectionDate||"記録なし")+"<br>点検者："+(r.inspector||"記録なし")+"<br>撮影日時："+when+"</p><img style='width:100%;border-radius:12px' src='"+URL.createObjectURL(r.blob)+"'>"+(i===0?"<button type='button' class='primary historyDiagnosisBtn'>📊 この位置の診断結果を見る</button>":"");const hb=d.querySelector(".historyDiagnosisBtn");if(hb)hb.onclick=showDiagnosis;box.appendChild(d)});show("history")}
 let audioCtx=null;
 function buttonSound(){
  try{
@@ -367,7 +446,7 @@ async function deleteInspectionRecord(id){
 async function saveInspectionRecord(){if(!db)await openDB();if(!window.currentInspectionDate){alert("点検を開始してから保存してください。");return}const photos=await buildInspectionSummary(),n1=$("inspectorSelect1").value||"",n2=$("inspectorSelect2").value||"",rec={id:window.currentInspectionDate,date:window.currentInspectionDate,inspector1:n1,inspector2:n2,inspectors:n2?n1+"・"+n2:n1,savedAt:new Date().toISOString(),photoCount:photos.length,photos};try{await new Promise((ok,no)=>{const tx=db.transaction("inspections","readwrite");tx.objectStore("inspections").put(rec);tx.oncomplete=()=>ok();tx.onerror=()=>no(tx.error)});$("inspectionSaveStatus").textContent="保存済み："+rec.date+"　写真 "+rec.photoCount+"枚";alert("本日の点検を保存しました。\\n写真："+rec.photoCount+"枚")}catch(e){alert("点検記録を保存できませんでした。")}}
 document.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{area=b.dataset.area;renderPositions()});
 $("backAreas").onclick=()=>show("areas");$("backPositions").onclick=()=>{stop();renderPositions()};
-$("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("zoomOutBtn").onclick=zoomOut;$("zoomInBtn").onclick=zoomIn;$("estimateBtn").onclick=estimateRepair;$("switchBtn").onclick=()=>{facing=facing==="environment"?"user":"environment";camera()};
+$("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("wideBtn").onclick=useWideCamera;$("zoomOutBtn").onclick=zoomOut;$("zoomInBtn").onclick=zoomIn;$("estimateBtn").onclick=()=>{estimateRepair();saveCurrentDiagnostic().catch(()=>{})};$("diagnosisBtn").onclick=showDiagnosis;$("editDiagnosisBtn").onclick=async()=>{await openCapture(pos);$("review").style.display="block";const h=await allHistory(key(area,pos));if(h.length){const cur=h[h.length-1];$("reviewImg").src=urlFor(cur.blob);$("currentAssessImg").src=urlFor(cur.blob);if(h.length>1){$("prevAssessImg").src=urlFor(h[h.length-2].blob);$("prevCompare").style.display="grid"}}};$("backDiagnosisPositions").onclick=()=>show("positions");$("switchBtn").onclick=()=>{selectedVideoDeviceId=null;facing=facing==="environment"?"user":"environment";camera()};
 $("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";$("camBtn").style.display="none";$("shotBtn").style.display="none";camera()};
 $("saveBtn").onclick=save;$("historyBtn").onclick=renderHistory;$("backCapture").onclick=()=>show("capture");window.addEventListener("pagehide",stop);
 const td=new Date();$("inspectionDate").value=[td.getFullYear(),String(td.getMonth()+1).padStart(2,"0"),String(td.getDate()).padStart(2,"0")].join("-");loadInspectors();
