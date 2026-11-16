@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.22</title>
+<title>AI庁舎点検 Ver.4.23</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -89,7 +89,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .zoomBtn{white-space:nowrap;font-size:14px!important;padding-left:8px!important;padding-right:8px!important}
 @media(max-width:420px){.zoomBtn{font-size:12px!important}.zoomControls{gap:5px!important}}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.22</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.23</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -180,7 +180,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 </div>
 <button type="button" id="estimateBtn" class="primary">💰 診断結果・概算費用を更新</button>
  <table class="evalTable"><tr><th>状態レベル</th><td id="evalLevel">Lv.3 要観察</td></tr><tr><th>前回から</th><td id="evalChange">－</td></tr><tr><th>優先度</th><td id="evalPriority">C：計画修繕</td></tr><tr><th>職員修繕可否</th><td id="staffRepair">－</td></tr><tr><th>判定根拠</th><td id="diagnosisBasis">前回写真との比較・危険性・施工条件を確認</td></tr><tr><th>本体修繕</th><td id="baseCost">－</td></tr><tr><th>足場・高所作業</th><td id="accessCost">－</td></tr><tr><th>諸経費等</th><td id="miscCost">－</td></tr><tr><th>総額概算</th><td><span id="totalCost" class="costBig">－</span></td></tr></table>
- <p class="warningCost">※予算検討用の概算です。正式な工事価格ではありません。現地条件、施工範囲、最低工事費、足場、養生、撤去・廃棄、設備移設、アスベスト等で大きく変動します。特殊対応は金額に自動加算せず「別途見積」とします。</p>
+ <div style="margin:12px 0;padding:12px;border:1px solid #fdba74;background:#fff7ed;border-radius:10px"><b>🏗 高所作業費の扱い</b><br>天井・屋根等は、高所作業設備の必要性が高いものとして足場等の費用を概算計上します。実際の施工方法（足場・ローリングタワー・高所作業車等）と正式金額は業者確認とします。</div><p class="warningCost">※予算検討用の概算です。正式な工事価格ではありません。現地条件、施工範囲、最低工事費、足場、養生、撤去・廃棄、設備移設、アスベスト等で大きく変動します。特殊対応は金額に自動加算せず「別途見積」とします。</p>
 </div>
 <button id="saveBtn" class="green">💾 この写真を保存</button>
 <button id="retryBtn" class="secondary">↻ 撮り直す</button></div>
@@ -427,6 +427,13 @@ function yen(n){return Math.round(n/1000)*1000}
 function rangeText(lo,hi){return yen(lo).toLocaleString("ja-JP")+"～"+yen(hi).toLocaleString("ja-JP")+"円"}
 function estimateRepair(){
  const t=$("repairType").value,d=COST_PUBLIC_DATA[t],q=Math.max(0,Number($("repairQty").value)||0);
+ // Ver.4.23: 天井・屋根等は予算検討時に高所作業費を0円にしない。
+ // 実施工方法を断定せず「足場等の高所作業設備」として概算計上する。
+ const highLocation=/天井|屋根|屋上/.test(($("capTitle")?.textContent||"")+" "+($("repairType")?.options[$("repairType").selectedIndex]?.text||""));
+ if(highLocation && $("heightWork").value==="none"){
+   $("heightWork").value="scaffold";
+   if(Number($("scaffoldArea").value||0)<=0) $("scaffoldArea").value=Math.max(10,Math.ceil(q||10));
+ }
  let lo=d.low,hi=d.high;
  if(d.unit!=="job"){lo=Math.max(d.minLow,lo*q);hi=Math.max(d.minHigh,hi*q)}
  let alo=0,ahi=0,access=$("heightWork").value,sa=Math.max(0,Number($("scaffoldArea").value)||0);
@@ -444,7 +451,7 @@ function estimateRepair(){
  const special=$("specialWork").value==="asbestos", high=access!=="none";
  $("staffRepair").textContent=(special||high||Number(lv.value)>=4||fall>=2)?"🔴 業者対応を推奨":"🟢 軽微な範囲は安全確認後に検討";
  $("diagnosisBasis").textContent="前回："+ch.value+"／状態Lv."+lv.value+"／落下等："+$("fallRisk").options[$("fallRisk").selectedIndex].text+"／影響："+$("impactRisk").options[$("impactRisk").selectedIndex].text;
- $("baseCost").textContent=rangeText(lo,hi);$("accessCost").textContent=access==="none"?"なし":rangeText(alo,ahi);
+ $("baseCost").textContent=rangeText(lo,hi);$("accessCost").textContent=access==="none"?"なし":rangeText(alo,ahi)+(highLocation?"（高所作業設備・概算）":"");
  $("miscCost").textContent=rangeText(mlo,mhi);
  $("totalCost").textContent=rangeText(totalLo,totalHi)+($("specialWork").value==="asbestos"?" ＋ 特殊対応費（別途見積）":"");
  if(db&&area&&pos)saveCurrentDiagnostic().catch(()=>{});
@@ -702,7 +709,7 @@ async function openDiagnosis411(){
 document.addEventListener("click",function(e){
  const ch=e.target.closest&&e.target.closest(".change411 button");
  if(ch){e.preventDefault();$("diag411Change").value=ch.dataset.change;document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b===ch));return}
- const d=null; // Ver.4.22: diagnosis buttons use direct onclick modal
+ const d=null; // Ver.4.23: diagnosis buttons use direct onclick modal
  const calc=e.target.closest&&e.target.closest("#diag411Calc");
  if(calc){e.preventDefault();const data=diag411Collect();localStorage.setItem(diag411Key(),JSON.stringify(data));diag411Render(data);return}
  if(e.target.closest&&e.target.closest("#diag411BackCapture")){e.preventDefault();show("capture");return}
