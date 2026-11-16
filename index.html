@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.20</title>
+<title>AI庁舎点検 Ver.4.22</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -89,7 +89,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .zoomBtn{white-space:nowrap;font-size:14px!important;padding-left:8px!important;padding-right:8px!important}
 @media(max-width:420px){.zoomBtn{font-size:12px!important}.zoomControls{gap:5px!important}}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.20</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.22</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -142,16 +142,17 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <button class="secondary" id="backAreas">← エリアへ</button></section>
 
 <section id="capture" class="screen">
-<h2 id="capTitle"></h2><p id="guide" class="muted"></p>
+<h2 id="capTitle"></h2><div id="previousPhotoDate" style="font-weight:800;color:#1e3a8a;background:#eff6ff;border:1px solid #93c5fd;border-radius:10px;padding:9px 11px;margin:8px 0">前回点検日：記録なし</div><p id="guide" class="muted"></p>
 <div class="cam"><video id="video" playsinline webkit-playsinline autoplay muted></video><img id="overlay" alt=""></div>
 <div id="status" class="status">① カメラを起動してください。</div>
 <div id="opacityWrap"><label>前回写真の透明度</label><input id="opacity" type="range" min="10" max="80" value="42"></div>
 <button id="camBtn" class="primary">📷 カメラを起動</button>
 <div class="shutterBar">
 <div id="zoomControls" class="zoomControls" style="display:none">
-<button type="button" id="wideBtn" class="zoomBtn">0.5×</button>
+<button type="button" id="wideBtn" class="zoomBtn">📷 超広角</button>
 <button type="button" id="maxViewBtn" class="zoomBtn">📐 最大画角</button>
 <b id="zoomValue" class="zoomValue">1.0×</b>
+<button type="button" id="zoomOutBtn" class="zoomBtn">➖ ズームアウト</button>
 <button type="button" id="zoomInBtn" class="zoomBtn">➕ ズームアップ</button>
 </div>
 <button type="button" id="shotBtn" class="shot" style="display:none">📸 撮影する</button>
@@ -408,8 +409,8 @@ async function openCapture(p){
  await selectWideBeforeCamera();
  pos=p;capturedBlob=null;$("review").style.display="none";$("capTitle").textContent=names[area]+"｜撮影位置 "+String(pos).padStart(2,"0");
  const rec=await getPhoto(key(area,pos));window.previousInspectionRecord=rec;
- if(rec){if(previewURL)URL.revokeObjectURL(previewURL);previewURL=urlFor(rec.blob);$("overlay").src=previewURL;$("overlay").style.display="block";$("opacityWrap").style.display="block";$("guide").textContent="前回："+(rec.inspectionDate||"記録なし")+"／点検者："+(rec.inspector||"記録なし")+"。半透明写真に構図を合わせて撮影してください。"}
- else{$("overlay").removeAttribute("src");$("overlay").style.display="none";$("opacityWrap").style.display="none";$("guide").textContent="初回撮影です。この写真が次回から前回写真になります。"}
+ if(rec){if(previewURL)URL.revokeObjectURL(previewURL);previewURL=urlFor(rec.blob);$("overlay").src=previewURL;$("overlay").style.display="block";$("opacityWrap").style.display="block";$("previousPhotoDate").textContent="前回点検日："+(rec.inspectionDate||"記録なし");$("guide").textContent="前回："+(rec.inspectionDate||"記録なし")+"／点検者："+(rec.inspector||"記録なし")+"。半透明写真に構図を合わせて撮影してください。"}
+ else{$("overlay").removeAttribute("src");$("overlay").style.display="none";$("opacityWrap").style.display="none";$("previousPhotoDate").textContent="前回点検日：記録なし";$("guide").textContent="初回撮影です。この写真が次回から前回写真になります。"}
  $("status").textContent="① カメラを起動してください。";$("camBtn").style.display="block";$("shotBtn").style.display="none";await loadDiagnosticIntoForm();show("capture")
 }
 
@@ -454,16 +455,7 @@ function applyCameraZoom(){
  $("zoomValue").textContent=cameraZoom.toFixed(1)+"×";
 }
 function zoomIn(){cameraZoom=Math.min(3,cameraZoom+0.5);applyCameraZoom()}
-async function zoomOut(){
- if(cameraZoom>1){
-  cameraZoom=Math.max(1,cameraZoom-0.5);
-  applyCameraZoom();
-  $("status").textContent="ズームを "+cameraZoom.toFixed(1)+"× に戻しました。";
-  return;
- }
- // 1.0×より広くするにはデジタル処理ではなく実際の広角レンズが必要。
- await useWideCamera();
-}
+async function zoomOut(){cameraZoom=Math.max(1,Number(cameraZoom||1)-0.5);applyCameraZoom();if($("zoomValue"))$("zoomValue").textContent=cameraZoom.toFixed(1)+"×";$("status").textContent=cameraZoom>1?"ズームアウトしました。":"標準画角 1.0× に戻しました。";}
 async function useWideCamera(){
  try{
   if(!navigator.mediaDevices?.enumerateDevices){
@@ -477,7 +469,7 @@ async function useWideCamera(){
   const pool=rear.length?rear:(labeled.length?labeled:devices);
   const wide=pool.find(d=>/ultra[\s-]?wide|ultrawide|0[\.,]5|wide angle|広角|超広角/i.test(d.label));
   if(wide){
-   selectedVideoDeviceId=wide.deviceId;
+   selectedVideoDeviceId=wide.deviceId;if($("wideBtn"))$("wideBtn").textContent="0.5×相当・超広角";
    facing="environment";
    await camera();
    $("zoomValue").textContent="0.5×";
@@ -486,9 +478,9 @@ async function useWideCamera(){
   }
   // Some Android browsers expose multiple rear cameras but hide meaningful lens labels.
   if(rear.length>1 || pool.length>1){
-   $("status").textContent="⚠ 複数のカメラは検出しましたが、ブラウザが超広角レンズ名を公開していないため0.5×を安全に特定できません。端末標準カメラ、または通常ブラウザをご利用ください。";
+   if($("wideBtn"))$("wideBtn").textContent="0.5× 利用不可";$("status").textContent="⚠ 複数のカメラは検出しましたが、0.5×相当の超広角を安全に特定できません。";
   }else{
-   $("status").textContent="⚠ このブラウザからは超広角カメラを利用できません。1.0×が最も広い画角です。端末標準カメラでは0.5×を利用できる場合があります。";
+   if($("wideBtn"))$("wideBtn").textContent="0.5× 利用不可";$("status").textContent="⚠ この端末／ブラウザでは0.5×相当の超広角カメラを取得できません。1.0×を使用してください。";
   }
  }catch(e){
   $("status").textContent="⚠ 超広角カメラへの切替に失敗しました。通常ブラウザまたは端末標準カメラをご利用ください。";
@@ -710,7 +702,7 @@ async function openDiagnosis411(){
 document.addEventListener("click",function(e){
  const ch=e.target.closest&&e.target.closest(".change411 button");
  if(ch){e.preventDefault();$("diag411Change").value=ch.dataset.change;document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b===ch));return}
- const d=null; // Ver.4.20: diagnosis buttons use direct onclick modal
+ const d=null; // Ver.4.22: diagnosis buttons use direct onclick modal
  const calc=e.target.closest&&e.target.closest("#diag411Calc");
  if(calc){e.preventDefault();const data=diag411Collect();localStorage.setItem(diag411Key(),JSON.stringify(data));diag411Render(data);return}
  if(e.target.closest&&e.target.closest("#diag411BackCapture")){e.preventDefault();show("capture");return}
