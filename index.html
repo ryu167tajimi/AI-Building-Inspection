@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.17</title>
+<title>AI庁舎点検 Ver.4.20</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -89,7 +89,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .zoomBtn{white-space:nowrap;font-size:14px!important;padding-left:8px!important;padding-right:8px!important}
 @media(max-width:420px){.zoomBtn{font-size:12px!important}.zoomControls{gap:5px!important}}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.17</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.20</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -113,7 +113,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <button id="addInspectorBtn" class="secondary" style="width:38%;margin-top:0">＋ 追加</button>
 </div>
 
-<button class="primary" id="startBtn" style="margin-top:18px">この内容で点検を開始</button>
+<div class="card" style="margin-top:14px;border:2px solid #2563eb"><h3 style="margin:0 0 8px">💾 過去点検データの引継ぎ</h3><p class="muted">この端末に残る点検履歴を画像込みJSONへ書き出します。11月12日分が残っていれば実データを救出できます。</p><button type="button" id="exportPublicDataBtn" class="secondary">📤 公開用データを書き出す</button><input id="importPublicDataFile" type="file" accept=".json,application/json" style="margin-top:10px"><button type="button" id="importPublicDataBtn" class="secondary">📥 公開用データを読み込む</button><div id="publicDataStatus" class="muted"></div></div><button class="primary" id="startBtn" style="margin-top:18px">この内容で点検を開始</button>
 <button id="backWelcome" class="secondary">← 最初の画面へ戻る</button>
 </div></section>
 <section id="areas" class="screen"><h2>点検エリア</h2><div class="grid">
@@ -532,15 +532,18 @@ function buttonSound(){
 document.addEventListener("click",e=>{if(e.target.closest("button"))buttonSound()});
 $("welcomeStartBtn").onclick=()=>show("setup");$("backWelcome").onclick=goHome;$("homeBtn").onclick=goHome;
 function inspectorOptions(selected,second=false){
- let a;try{a=JSON.parse(localStorage.getItem("kasaharaInspectors")||"[]")}catch(e){a=[]}
- if(!Array.isArray(a)||!a.length)a=["大山　竜也"];if(!a.includes("大山　竜也"))a.unshift("大山　竜也");
+ const a=["大山　竜也","山田　常晶","長谷川　豊"];
  localStorage.setItem("kasaharaInspectors",JSON.stringify(a));
- return (second?'<option value="">なし</option>':'')+a.map(n=>'<option'+(n===selected?' selected':'')+'>'+n+'</option>').join("")
+ const blank='<option value="">'+(second?"なし":"")+'</option>';
+ return blank+a.map(n=>'<option value="'+n+'"'+(n===selected?' selected':'')+'>'+n+'</option>').join("")
 }
 function loadInspectors(){
- const last1=localStorage.getItem("kasaharaInspector1")||localStorage.getItem("kasaharaInspector")||"大山　竜也";
+ const last1=localStorage.getItem("kasaharaInspector1")||"";
  const last2=localStorage.getItem("kasaharaInspector2")||"";
- $("inspectorSelect1").innerHTML=inspectorOptions(last1,false);$("inspectorSelect2").innerHTML=inspectorOptions(last2,true)
+ $("inspectorSelect1").innerHTML=inspectorOptions(last1,false);
+ $("inspectorSelect2").innerHTML=inspectorOptions(last2,true);
+ $("inspectorSelect1").value=["大山　竜也","山田　常晶","長谷川　豊"].includes(last1)?last1:"";
+ $("inspectorSelect2").value=["大山　竜也","山田　常晶","長谷川　豊"].includes(last2)?last2:"";
 }
 function addInspector(){
  const n=$("newInspector").value.trim();if(!n)return;
@@ -553,7 +556,11 @@ $("startBtn").onclick=()=>{
  const d=$("inspectionDate").value,n1=$("inspectorSelect1").value,n2=$("inspectorSelect2").value;
  if(!d){alert("点検日を入力してください。");return}if(!n1){alert("点検者①を選択してください。");return}
  window.currentInspectionDate=d;window.currentInspector=n2?n1+"・"+n2:n1;$("inspectionSaveStatus").textContent="未保存";
- localStorage.setItem("kasaharaInspector1",n1);localStorage.setItem("kasaharaInspector2",n2);show("areas")
+ localStorage.setItem("kasaharaInspector1",n1);
+ localStorage.setItem("kasaharaInspector2",n2);
+ show("areas");
+ if($("mapView"))$("mapView").style.display="block";
+ if($("listView"))$("listView").style.display="none";
 };
 $("mapViewBtn").onclick=()=>{$("mapView").style.display="block";$("listView").style.display="none";$("mapViewBtn").className="primary";$("listViewBtn").className="secondary";$("listViewBtn").style.marginTop="0"};
 $("listViewBtn").onclick=()=>{$("mapView").style.display="none";$("listView").style.display="block";$("listViewBtn").className="primary";$("mapViewBtn").className="secondary";$("mapViewBtn").style.marginTop="0"};
@@ -583,10 +590,32 @@ async function deleteInspectionRecord(id){
 async function saveInspectionRecord(){if(!db)await openDB();if(!window.currentInspectionDate){alert("点検を開始してから保存してください。");return}const photos=await buildInspectionSummary(),n1=$("inspectorSelect1").value||"",n2=$("inspectorSelect2").value||"",rec={id:window.currentInspectionDate,date:window.currentInspectionDate,inspector1:n1,inspector2:n2,inspectors:n2?n1+"・"+n2:n1,savedAt:new Date().toISOString(),photoCount:photos.length,photos};try{await new Promise((ok,no)=>{const tx=db.transaction("inspections","readwrite");tx.objectStore("inspections").put(rec);tx.oncomplete=()=>ok();tx.onerror=()=>no(tx.error)});$("inspectionSaveStatus").textContent="保存済み："+rec.date+"　写真 "+rec.photoCount+"枚";alert("本日の点検を保存しました。\\n写真："+rec.photoCount+"枚")}catch(e){alert("点検記録を保存できませんでした。")}}
 document.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{area=b.dataset.area;renderPositions()});
 $("backAreas").onclick=()=>show("areas");$("backPositions").onclick=()=>{stop();renderPositions()};
-$("camBtn").onclick=camera;$("shotBtn").onclick=shoot;$("wideBtn").onclick=useWideCamera;$("zoomOutBtn").onclick=zoomOut;$("zoomInBtn").onclick=zoomIn;$("estimateBtn").onclick=()=>{estimateRepair();saveCurrentDiagnostic().catch(()=>{})};$("diagnosisBtn").onclick=showDiagnosis;$("editDiagnosisBtn").onclick=async()=>{await openCapture(pos);$("review").style.display="block";const h=await allHistory(key(area,pos));if(h.length){const cur=h[h.length-1];$("reviewImg").src=urlFor(cur.blob);$("currentAssessImg").src=urlFor(cur.blob);if(h.length>1){$("prevAssessImg").src=urlFor(h[h.length-2].blob);$("prevCompare").style.display="grid"}}};$("backDiagnosisPositions").onclick=()=>show("positions");$("switchBtn").onclick=()=>{selectedVideoDeviceId=null;facing=facing==="environment"?"user":"environment";camera()};
+$("camBtn").onclick=camera;
+$("shotBtn").onclick=shoot;
+if($("wideBtn"))$("wideBtn").onclick=useWideCamera;
+if($("maxViewBtn"))$("maxViewBtn").onclick=maxViewSafe;
+if($("zoomOutBtn"))$("zoomOutBtn").onclick=zoomOut;
+if($("zoomInBtn"))$("zoomInBtn").onclick=zoomIn;$("estimateBtn").onclick=()=>{estimateRepair();saveCurrentDiagnostic().catch(()=>{})};$("diagnosisBtn").onclick=showDiagnosis;$("editDiagnosisBtn").onclick=async()=>{await openCapture(pos);$("review").style.display="block";const h=await allHistory(key(area,pos));if(h.length){const cur=h[h.length-1];$("reviewImg").src=urlFor(cur.blob);$("currentAssessImg").src=urlFor(cur.blob);if(h.length>1){$("prevAssessImg").src=urlFor(h[h.length-2].blob);$("prevCompare").style.display="grid"}}};$("backDiagnosisPositions").onclick=()=>show("positions");$("switchBtn").onclick=()=>{selectedVideoDeviceId=null;facing=facing==="environment"?"user":"environment";camera()};
 $("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";$("camBtn").style.display="none";$("shotBtn").style.display="none";camera()};
 $("saveBtn").onclick=save;$("historyBtn").onclick=renderHistory;$("backCapture").onclick=()=>show("capture");window.addEventListener("pagehide",stop);
-const td=new Date();$("inspectionDate").value=[td.getFullYear(),String(td.getMonth()+1).padStart(2,"0"),String(td.getDate()).padStart(2,"0")].join("-");loadInspectors();
+function blobToDataURL420(blob){return new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=()=>no(f.error);f.readAsDataURL(blob)})}
+function dataURLToBlob420(x){const a=x.split(","),m=(a[0].match(/data:(.*?);base64/)||[])[1]||"image/jpeg",b=atob(a[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new Blob([u],{type:m})}
+async function exportPublicInspectionData(){
+ try{if(!db)await openDB();
+ const getAll=n=>new Promise((ok,no)=>{const r=db.transaction(n,"readonly").objectStore(n).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)});
+ const history=await getAll("history"),inspections=await getAll("inspections"),diagnostics=await getAll("diagnostics"),hh=[];
+ for(const x of history)hh.push({...x,blob:x.blob?await blobToDataURL420(x.blob):null});
+ const pack={schema:"kasahara-facility-public-data-v1",exportedAt:new Date().toISOString(),inspectors:["","大山　竜也","山田　常晶","長谷川　豊"],history:hh,inspections,diagnostics};
+ const b=new Blob([JSON.stringify(pack,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="kasahara_facility_public_data_"+new Date().toISOString().slice(0,10)+".json";a.click();
+ $("publicDataStatus").textContent="書き出し完了。11月12日写真："+hh.filter(x=>x.inspectionDate==="2026-11-12").length+"件";
+ }catch(e){$("publicDataStatus").textContent="書き出し失敗："+e.message}}
+async function importPublicInspectionData(){
+ try{const f=$("importPublicDataFile").files[0];if(!f){alert("JSONファイルを選択してください。");return}const pack=JSON.parse(await f.text());if(pack.schema!=="kasahara-facility-public-data-v1")throw new Error("対応外データ");
+ if(!db)await openDB();const tx=db.transaction(["history","inspections","diagnostics"],"readwrite"),hs=tx.objectStore("history"),is=tx.objectStore("inspections"),ds=tx.objectStore("diagnostics");
+ for(const x of pack.history||[]){const y={...x};delete y.id;if(typeof y.blob==="string"&&y.blob.startsWith("data:"))y.blob=dataURLToBlob420(y.blob);hs.add(y)}for(const x of pack.inspections||[])is.put(x);for(const x of pack.diagnostics||[])ds.put(x);
+ await new Promise((ok,no)=>{tx.oncomplete=ok;tx.onerror=()=>no(tx.error)});$("publicDataStatus").textContent="読み込み完了。11月12日写真："+(pack.history||[]).filter(x=>x.inspectionDate==="2026-11-12").length+"件";await updatePreviousInspection();
+ }catch(e){$("publicDataStatus").textContent="読み込み失敗："+e.message}}
+const td=new Date();$("inspectionDate").value=[td.getFullYear(),String(td.getMonth()+1).padStart(2,"0"),String(td.getDate()).padStart(2,"0")].join("-");loadInspectors();if($("exportPublicDataBtn"))$("exportPublicDataBtn").onclick=exportPublicInspectionData;if($("importPublicDataBtn"))$("importPublicDataBtn").onclick=importPublicInspectionData;
 document.addEventListener("click",async function(e){
  const save=e.target.closest("#saveInspectionBtn");
  if(save){e.preventDefault();e.stopPropagation();await saveInspectionRecord();const box=$("savedInspectionList");if(box&&box.style.display!=="none")await renderSavedInspections();return}
@@ -681,7 +710,7 @@ async function openDiagnosis411(){
 document.addEventListener("click",function(e){
  const ch=e.target.closest&&e.target.closest(".change411 button");
  if(ch){e.preventDefault();$("diag411Change").value=ch.dataset.change;document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b===ch));return}
- const d=null; // Ver.4.17: diagnosis buttons use direct onclick modal
+ const d=null; // Ver.4.20: diagnosis buttons use direct onclick modal
  const calc=e.target.closest&&e.target.closest("#diag411Calc");
  if(calc){e.preventDefault();const data=diag411Collect();localStorage.setItem(diag411Key(),JSON.stringify(data));diag411Render(data);return}
  if(e.target.closest&&e.target.closest("#diag411BackCapture")){e.preventDefault();show("capture");return}

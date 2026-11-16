@@ -1,6 +1,6 @@
 {
   "app": "笠原消防署 AI庁舎点検",
-  "version": "4.17",
+  "version": "4.20",
   "inspection_points": {
     "車庫": 20,
     "2階": 11,
@@ -31,5 +31,14 @@
     "諸経費",
     "概算総額"
   ],
-  "repair_cost_note": "予算検討用の概算。正式金額は現地確認・業者見積で確定。"
+  "repair_cost_note": "予算検討用の概算。正式金額は現地確認・業者見積で確定。",
+  "inspector_master": [
+    "",
+    "大山　竜也",
+    "山田　常晶",
+    "長谷川　豊"
+  ],
+  "inspector_default": "",
+  "fix": "点検エリアが開かない原因となっていた削除済みzoomOutBtnへのイベント設定を安全化",
+  "history_export_import": true
 }
