@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>AI庁舎点検 Ver.4.24</title>
+<title>AI庁舎点検 Ver.4.25</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
@@ -89,7 +89,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 .zoomBtn{white-space:nowrap;font-size:14px!important;padding-left:8px!important;padding-right:8px!important}
 @media(max-width:420px){.zoomBtn{font-size:12px!important}.zoomControls{gap:5px!important}}
 </style></head><body>
-<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.24</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
+<header><b>🚒 AI庁舎点検</b><span class="ver">Ver.4.25</span></header><button type="button" id="homeBtn" class="homeFloat" aria-label="最初に戻る">🏠 最初に戻る</button><main>
 
 <section id="welcome" class="screen active">
 <div class="card" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center">
@@ -149,8 +149,8 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08);cur
 <button id="camBtn" class="primary">📷 カメラを起動</button>
 <div class="shutterBar">
 <div id="zoomControls" class="zoomControls" style="display:none">
-<button type="button" id="wideBtn" class="zoomBtn">📷 超広角</button>
-<button type="button" id="maxViewBtn" class="zoomBtn">📐 最大画角</button>
+
+
 <b id="zoomValue" class="zoomValue">1.0×</b>
 <button type="button" id="zoomOutBtn" class="zoomBtn">➖ ズームアウト</button>
 <button type="button" id="zoomInBtn" class="zoomBtn">➕ ズームアップ</button>
@@ -440,7 +440,7 @@ function buildAiDetailPromptV424(){const prev=window.previousInspectionRecord||{
 async function makeCompareImageV424(){try{const prev=window.previousInspectionRecord,cur=$("reviewImg")?.src||$("currentAssessImg")?.src;if(!prev?.blob||!cur){alert("前回写真と今回写真の両方が必要です。");return}const load=x=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=x}),pu=URL.createObjectURL(prev.blob),a=await load(pu),b=await load(cur),c=document.createElement("canvas");c.width=1600;c.height=900;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,1600,900);const draw=(im,dx)=>{const r=Math.min(780/im.width,780/im.height),w=im.width*r,h=im.height*r;x.drawImage(im,dx+(780-w)/2,80+(780-h)/2,w,h)};draw(a,10);draw(b,810);x.fillStyle="#111";x.font="bold 34px sans-serif";x.fillText("前回 "+(prev.inspectionDate||""),20,50);x.fillText("今回",820,50);URL.revokeObjectURL(pu);const l=$("downloadCompareImage");l.href=c.toDataURL("image/jpeg",.9);l.style.display="inline-block";l.textContent="⬇ 比較画像を保存";}catch(e){alert("比較画像を作成できませんでした："+e.message)}}
 function estimateRepair(){
  const t=$("repairType").value,d=COST_PUBLIC_DATA[t],q=Math.max(0,Number($("repairQty").value)||0);
- // Ver.4.24: 天井・屋根等は予算検討時に高所作業費を0円にしない。
+ // Ver.4.25: 天井・屋根等は予算検討時に高所作業費を0円にしない。
  // 実施工方法を断定せず「足場等の高所作業設備」として概算計上する。
  const highLocation=/天井|屋根|屋上/.test(($("capTitle")?.textContent||"")+" "+($("repairType")?.options[$("repairType").selectedIndex]?.text||""));
  if(highLocation && $("heightWork").value==="none"){
@@ -489,7 +489,7 @@ async function useWideCamera(){
   const pool=rear.length?rear:(labeled.length?labeled:devices);
   const wide=pool.find(d=>/ultra[\s-]?wide|ultrawide|0[\.,]5|wide angle|広角|超広角/i.test(d.label));
   if(wide){
-   selectedVideoDeviceId=wide.deviceId;if($("wideBtn"))$("wideBtn").textContent="0.5×相当・超広角";
+   selectedVideoDeviceId=wide.deviceId;
    facing="environment";
    await camera();
    $("zoomValue").textContent="0.5×";
@@ -498,9 +498,9 @@ async function useWideCamera(){
   }
   // Some Android browsers expose multiple rear cameras but hide meaningful lens labels.
   if(rear.length>1 || pool.length>1){
-   if($("wideBtn"))$("wideBtn").textContent="0.5× 利用不可";$("status").textContent="⚠ 複数のカメラは検出しましたが、0.5×相当の超広角を安全に特定できません。";
+   $("status").textContent="⚠ 複数のカメラは検出しましたが、0.5×相当の超広角を安全に特定できません。";
   }else{
-   if($("wideBtn"))$("wideBtn").textContent="0.5× 利用不可";$("status").textContent="⚠ この端末／ブラウザでは0.5×相当の超広角カメラを取得できません。1.0×を使用してください。";
+   $("status").textContent="⚠ この端末／ブラウザでは0.5×相当の超広角カメラを取得できません。1.0×を使用してください。";
   }
  }catch(e){
   $("status").textContent="⚠ 超広角カメラへの切替に失敗しました。通常ブラウザまたは端末標準カメラをご利用ください。";
@@ -604,8 +604,8 @@ document.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{area=b.datase
 $("backAreas").onclick=()=>show("areas");$("backPositions").onclick=()=>{stop();renderPositions()};
 $("camBtn").onclick=camera;
 $("shotBtn").onclick=shoot;
-if($("wideBtn"))$("wideBtn").onclick=useWideCamera;
-if($("maxViewBtn"))$("maxViewBtn").onclick=maxViewSafe;
+
+
 if($("zoomOutBtn"))$("zoomOutBtn").onclick=zoomOut;
 if($("zoomInBtn"))$("zoomInBtn").onclick=zoomIn;$("estimateBtn").onclick=()=>{estimateRepair();updateAiDetailVisibilityV424();saveCurrentDiagnostic().catch(()=>{})};if($("changeState"))$("changeState").onchange=updateAiDetailVisibilityV424;if($("aiDetailBtn"))$("aiDetailBtn").onclick=()=>{$("aiDetailPanel").style.display="block";$("aiDetailPrompt").value=buildAiDetailPromptV424()};if($("copyAiPromptBtn"))$("copyAiPromptBtn").onclick=async()=>{const t=$("aiDetailPrompt").value||buildAiDetailPromptV424();try{await navigator.clipboard.writeText(t);alert("AI診断依頼文をコピーしました。")}catch(e){$("aiDetailPrompt").value=t;$("aiDetailPrompt").select()}};if($("makeCompareImageBtn"))$("makeCompareImageBtn").onclick=makeCompareImageV424;$("diagnosisBtn").onclick=showDiagnosis;$("editDiagnosisBtn").onclick=async()=>{await openCapture(pos);$("review").style.display="block";const h=await allHistory(key(area,pos));if(h.length){const cur=h[h.length-1];$("reviewImg").src=urlFor(cur.blob);$("currentAssessImg").src=urlFor(cur.blob);if(h.length>1){$("prevAssessImg").src=urlFor(h[h.length-2].blob);$("prevCompare").style.display="grid"}}};$("backDiagnosisPositions").onclick=()=>show("positions");$("switchBtn").onclick=()=>{selectedVideoDeviceId=null;facing=facing==="environment"?"user":"environment";camera()};
 $("opacity").oninput=e=>$("overlay").style.opacity=e.target.value/100;$("retryBtn").onclick=()=>{$("review").style.display="none";$("camBtn").style.display="none";$("shotBtn").style.display="none";camera()};
@@ -722,7 +722,7 @@ async function openDiagnosis411(){
 document.addEventListener("click",function(e){
  const ch=e.target.closest&&e.target.closest(".change411 button");
  if(ch){e.preventDefault();$("diag411Change").value=ch.dataset.change;document.querySelectorAll(".change411 button").forEach(b=>b.classList.toggle("selected",b===ch));return}
- const d=null; // Ver.4.24: diagnosis buttons use direct onclick modal
+ const d=null; // Ver.4.25: diagnosis buttons use direct onclick modal
  const calc=e.target.closest&&e.target.closest("#diag411Calc");
  if(calc){e.preventDefault();const data=diag411Collect();localStorage.setItem(diag411Key(),JSON.stringify(data));diag411Render(data);return}
  if(e.target.closest&&e.target.closest("#diag411BackCapture")){e.preventDefault();show("capture");return}
