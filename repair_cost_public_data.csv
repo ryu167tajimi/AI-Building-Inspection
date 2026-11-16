@@ -1,8 +1,0 @@
-﻿id,項目,単位,下限,上限,データ種別,注意,出典URL
-scaffold,足場,㎡,600,1200,民間公開相場,足場面積×単価。小規模工事は最低費用の影響大,https://www.reform-guide.jp/topics/gaiheki-reform-hiyou/
-ceiling_board,天井材・ボード補修,㎡,3000,7000,参考初期値,材料・下地・撤去条件で変動。石膏ボード20㎡6万円の公開例を参考,https://www.reform-guide.jp/topics/tenjyo-diy/
-crack,外壁ひび割れ補修,㎡,1700,2500,民間公開相場,補修方法・深さ・範囲で変動,https://www.homepro.jp/gaiheki/gaiheki-basic/2110dt
-seal,シーリング,m,700,1500,民間公開相場,増し打ち/打ち替えで変動,https://www.homepro.jp/gaiheki/gaiheki-basic/2112dt/
-waterproof,小規模防水補修,一式,70000,300000,民間公開相場,4㎡程度のベランダ例。屋上全体にはそのまま適用不可,https://www.reform-guide.jp/topics/amamori-syuri/
-overhead,諸経費,工事費比率,5,15,民間公開相場,交通費・廃棄等。案件により変動,https://www.reform-guide.jp/topics/gaihekitosou-mitsumori/
-asbestos,アスベスト等特殊対応,別途,0,0,別途見積,自動金額加算しない。調査・法令・処分条件により個別見積,https://www.mlit.go.jp/gobuild/shiryou_sekisan_unnyou.htm
